@@ -3,7 +3,7 @@ services:
     name: college-fee-portal
     runtime: node
     plan: free
-    autoDeploy: true
+    autoDeployTrigger: commit
     buildCommand: npm --prefix client install --include=dev && npm --prefix client run build && npm --prefix server install
     startCommand: npm --prefix server start
     healthCheckPath: /api/health
@@ -22,5 +22,3 @@ services:
         sync: false
       - key: COLLEGE_NAME
         value: College Fee Portal
-      - key: CLIENT_ORIGIN
-        sync: false
