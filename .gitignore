@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.mongodb/
+*.log
+.env
+!server/.env.example
+.DS_Store
+
+# Student roster / quota mappings contain personal data - never commit these.
+server/data/

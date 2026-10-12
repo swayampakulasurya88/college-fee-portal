@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: college-fee-portal
+    runtime: node
+    plan: free
+    autoDeploy: true
+    buildCommand: npm --prefix client install --include=dev && npm --prefix client run build && npm --prefix server install
+    startCommand: npm --prefix server start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVE_CLIENT
+        value: "true"
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: COLLEGE_NAME
+        value: College Fee Portal
+      - key: CLIENT_ORIGIN
+        sync: false
