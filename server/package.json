@@ -9,7 +9,6 @@
     "dev": "node --watch src/index.js",
     "seed": "node src/seed.js",
     "import": "node src/import.js",
-    "deploy:seed": "node src/deploy-seed.js",
     "deploy:seed": "node src/deploy-seed.js"
   },
   "dependencies": {

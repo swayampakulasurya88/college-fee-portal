@@ -1,5 +1,7 @@
 # 🎓 College Fee Portal
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/swayampakulasurya88/college-fee-portal)
+
 A full-stack web app for tracking college fees. Each student's fee is split into three
 heads — **tuition fee**, **hostel fee** and a **monthly mess fee**. The fixed heads are
 billed **term-wise**: tuition across **4 terms** and hostel across **2 terms**, at a rate
