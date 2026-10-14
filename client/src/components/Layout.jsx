@@ -18,9 +18,9 @@ export default function Layout({ nav, children, roleLabel }) {
     <div className="app-shell">
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         <div className="brand">
-          <div className="brand-logo">🎓</div>
+          <img className="brand-logo" src="/kiet-logo.png" alt="KIET" />
           <div>
-            <div className="brand-name">Fee Portal</div>
+            <div className="brand-name">KIET Fee Portal</div>
             <div className="brand-role">{roleLabel}</div>
           </div>
         </div>

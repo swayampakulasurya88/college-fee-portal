@@ -74,7 +74,9 @@ export default function Login() {
     <div className="login-page">
       <div className="login-hero">
         <div>
-          <span className="hero-badge">🎓 College Fee Portal</span>
+          <span className="hero-badge">
+            <img src="/kiet-logo.png" alt="" className="hero-badge-logo" /> KIET College Fee Portal
+          </span>
           <h1 className="hero-title">
             Fees, dues and reports — all in one dashboard.
           </h1>
@@ -100,6 +102,7 @@ export default function Login() {
 
       <div className="login-panel">
         <div className="login-card">
+          <img src="/kiet-logo.png" alt="KIET" className="login-card-logo" />
           <h1>Welcome back</h1>
           <p className="muted">Sign in to continue to your fee dashboard.</p>
 

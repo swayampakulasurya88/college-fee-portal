@@ -129,8 +129,7 @@ textarea.input { resize: vertical; min-height: 96px; }
 .brand { display: flex; align-items: center; gap: 0.7rem; padding: 1.35rem 1.25rem; }
 .brand-logo {
   width: 40px; height: 40px; border-radius: 11px;
-  background: linear-gradient(135deg, #818cf8, #6366f1);
-  display: grid; place-items: center; font-size: 1.25rem;
+  background: #fff; object-fit: contain; padding: 3px; flex: none;
   box-shadow: 0 8px 20px -8px #6366f1;
 }
 .brand-name { font-weight: 700; color: #fff; font-size: 0.98rem; }
@@ -268,6 +267,8 @@ td.right, th.right { text-align: right; }
 .login-card { width: 100%; max-width: 400px; }
 .login-card h1 { font-size: 1.6rem; margin-bottom: 0.3rem; }
 .login-card > p { margin-bottom: 1.5rem; }
+.login-card-logo { width: 56px; height: 56px; border-radius: 15px; object-fit: contain; background: #fff; padding: 5px; box-shadow: var(--shadow-sm); margin-bottom: 0.9rem; }
+.hero-badge-logo { width: 20px; height: 20px; border-radius: 5px; object-fit: contain; background: #fff; padding: 1px; }
 .login-tabs { display: flex; gap: 0.3rem; background: var(--slate-100); padding: 0.3rem; border-radius: 11px; margin-bottom: 1.5rem; }
 .login-tabs button { flex: 1; border: none; background: transparent; padding: 0.6rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; color: var(--slate-500); cursor: pointer; }
 .login-tabs button.active { background: var(--white); color: var(--indigo); box-shadow: var(--shadow-sm); }
