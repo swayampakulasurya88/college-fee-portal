@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: college-fee-portal
+    name: kiet-fee-portal
     runtime: node
     plan: free
     autoDeployTrigger: commit
