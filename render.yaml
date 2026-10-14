@@ -21,4 +21,4 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: COLLEGE_NAME
-        value: College Fee Portal
+        value: KIET Fee Portal
