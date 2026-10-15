@@ -12,6 +12,7 @@ import messRoutes from './routes/mess.js';
 import termFeeRoutes from './routes/termFees.js';
 import messageRoutes from './routes/messages.js';
 import reportRoutes from './routes/reports.js';
+import duplicateRoutes from './routes/duplicates.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -34,6 +35,7 @@ app.use('/api/mess', messRoutes);
 app.use('/api/fees', termFeeRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/duplicates', duplicateRoutes);
 
 // When deployed as a single service (e.g. Render), the same server also hosts
 // the built React site, so the SPA and its assets are served from client/dist.

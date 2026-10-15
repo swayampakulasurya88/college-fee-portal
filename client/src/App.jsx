@@ -14,6 +14,7 @@ import AdminPayments from './pages/admin/AdminPayments.jsx';
 import AdminMess from './pages/admin/AdminMess.jsx';
 import AdminMessages from './pages/admin/AdminMessages.jsx';
 import AdminReports from './pages/admin/AdminReports.jsx';
+import AdminDuplicates from './pages/admin/AdminDuplicates.jsx';
 
 function RequireRole({ role }) {
   const { ready, role: current } = useAuth();
@@ -39,11 +40,15 @@ function StudentLayout() {
 function AdminLayout() {
   const location = useLocation();
   const [unread, setUnread] = useState(0);
+  const [duplicates, setDuplicates] = useState(0);
 
   useEffect(() => {
     let active = true;
     api('/messages?status=unread&limit=1')
       .then((d) => active && setUnread(d.counts?.unread || 0))
+      .catch(() => {});
+    api('/duplicates?limit=1')
+      .then((d) => active && setDuplicates(d.total || 0))
       .catch(() => {});
     return () => {
       active = false;
@@ -59,6 +64,7 @@ function AdminLayout() {
     { to: '/admin/mess', icon: '🍽️', label: 'Mess Fees' },
     { to: '/admin/messages', icon: '✉️', label: 'Messages', badge: unread },
     { to: '/admin/reports', icon: '📅', label: 'Daily Reports' },
+    { to: '/admin/duplicates', icon: '⚠️', label: 'Duplicates', badge: duplicates },
   ];
 
   return (
@@ -92,6 +98,7 @@ export default function App() {
           <Route path="/admin/mess" element={<AdminMess />} />
           <Route path="/admin/messages" element={<AdminMessages />} />
           <Route path="/admin/reports" element={<AdminReports />} />
+          <Route path="/admin/duplicates" element={<AdminDuplicates />} />
         </Route>
       </Route>
 

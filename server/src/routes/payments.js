@@ -2,6 +2,7 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import { Payment } from '../models/Payment.js';
 import { Student } from '../models/Student.js';
+import { DuplicateAttempt } from '../models/DuplicateAttempt.js';
 import { financeForStudent, round2, CATEGORIES, HEAD_TERMS } from '../utils/finance.js';
 import { paymentPayload, studentPayload } from '../utils/serialize.js';
 import { asyncHandler, HttpError } from '../utils/asyncHandler.js';
@@ -37,34 +38,111 @@ async function generateReceiptNo() {
   return `${prefix}${Date.now().toString().slice(-6)}`;
 }
 
-// Rejects a payment whose receipt number or transaction id is already in use.
-async function assertUniqueReceipt({ receiptNo, transactionId }, excludeId = null) {
-  const jobs = [];
+// Records a blocked attempt so the office can still see who tried to reuse a
+// reference (and whose payment already owns it). Never throws — logging a
+// duplicate must not change the 409 the caller receives.
+async function recordDuplicateAttempt({
+  kind,
+  reference,
+  student = null,
+  details = {},
+  actor = 'admin',
+  submittedBy = 'admin',
+  conflicting = null,
+}) {
+  try {
+    const conflictingStudent = conflicting?.student
+      ? await Student.findById(conflicting.student).select('rollNumber name').lean()
+      : null;
+
+    await DuplicateAttempt.create({
+      kind,
+      reference: String(reference || ''),
+      student: student?._id || null,
+      rollNumber: student?.rollNumber || '',
+      studentName: student?.name || '',
+      phone: student?.phone || '',
+      branch: student?.branch || '',
+      year: student?.year || '',
+      section: student?.section || '',
+      amount: Number(details.amount ?? conflicting?.amount ?? 0),
+      category: details.category || conflicting?.category || '',
+      term: details.term ?? conflicting?.term ?? null,
+      method: details.method || conflicting?.method || '',
+      paidOn: details.paidOn || new Date(),
+      note: details.note || '',
+      submittedBy,
+      attemptedBy: actor,
+      conflictingPayment: conflicting?._id || null,
+      conflictingStudent: conflicting?.student || null,
+      conflictingRollNumber: conflictingStudent?.rollNumber || '',
+      conflictingStudentName: conflictingStudent?.name || '',
+      status: 'new',
+    });
+  } catch (err) {
+    console.error('[duplicate-attempt]', err.message);
+  }
+}
+
+// Rejects a payment whose receipt number or transaction id is already in use,
+// and records who tried to reuse it.
+async function assertUniqueReceipt(
+  { receiptNo, transactionId },
+  { excludeId = null, student = null, details = {}, actor = 'admin', submittedBy = 'admin' } = {},
+) {
+  const checks = [];
   if (receiptNo) {
-    const q = { receiptNo };
-    if (excludeId) q._id = { $ne: excludeId };
-    jobs.push(
-      Payment.findOne(q)
-        .select('_id')
-        .lean()
-        .then((dup) => {
-          if (dup) throw new HttpError(409, `Receipt No. ${receiptNo} is already used on another payment. Receipt numbers must be unique.`);
-        }),
-    );
+    checks.push({
+      kind: 'receiptNo',
+      field: 'receiptNo',
+      value: receiptNo,
+      message: `Receipt No. ${receiptNo} is already used on another payment. Receipt numbers must be unique.`,
+    });
   }
   if (transactionId) {
-    const q = { transactionId };
-    if (excludeId) q._id = { $ne: excludeId };
-    jobs.push(
-      Payment.findOne(q)
-        .select('_id')
-        .lean()
-        .then((dup) => {
-          if (dup) throw new HttpError(409, `Transaction / UTR ID ${transactionId} is already recorded. Duplicate receipts are not allowed.`);
-        }),
-    );
+    checks.push({
+      kind: 'transactionId',
+      field: 'transactionId',
+      value: transactionId,
+      message: `Transaction / UTR ID ${transactionId} is already recorded. Duplicate receipts are not allowed.`,
+    });
   }
-  await Promise.all(jobs);
+
+  for (const check of checks) {
+    const query = { [check.field]: check.value };
+    if (excludeId) query._id = { $ne: excludeId };
+    // eslint-disable-next-line no-await-in-loop
+    const dup = await Payment.findOne(query).select('_id student amount category term method paidOn').lean();
+    if (!dup) continue;
+
+    // eslint-disable-next-line no-await-in-loop
+    await recordDuplicateAttempt({
+      kind: check.kind,
+      reference: check.value,
+      student,
+      details,
+      actor,
+      submittedBy,
+      conflicting: dup,
+    });
+    throw new HttpError(409, check.message);
+  }
+}
+
+// Backstop for a duplicate that slips past the check above (a race between two
+// requests). The unique index rejects it; we still log who tried.
+async function recordKeyRaceAttempt(err, fields, student, submittedBy, actor) {
+  if (err?.code !== 11000) return;
+  const key = Object.keys(err.keyPattern || err.keyValue || {})[0];
+  if (key !== 'receiptNo' && key !== 'transactionId') return;
+  await recordDuplicateAttempt({
+    kind: key,
+    reference: key === 'receiptNo' ? fields.receiptNo || '' : fields.transactionId || '',
+    student,
+    details: fields,
+    actor,
+    submittedBy,
+  });
 }
 
 // Turns a Mongo duplicate-key error into a readable 409.
@@ -256,22 +334,26 @@ router.post(
     }
     if (!student) throw new HttpError(404, 'Student not found');
 
+    const submittedBy = isStudent ? 'student' : 'admin';
+    const actor = isStudent ? student.rollNumber : req.user?.username || 'admin';
+
     const fields = pickPaymentFields(req.body || {}, { requireTransaction: isStudent });
     applyTermRules(fields);
     // Every payment gets a unique receipt number (auto-issued when the admin
     // leaves the field blank).
     if (!fields.receiptNo) fields.receiptNo = await generateReceiptNo();
-    await assertUniqueReceipt(fields);
+    await assertUniqueReceipt(fields, { student, details: fields, actor, submittedBy });
 
     let payment;
     try {
       payment = await Payment.create({
         ...fields,
         student: student._id,
-        submittedBy: isStudent ? 'student' : 'admin',
-        createdBy: isStudent ? student.rollNumber : req.user?.username || 'admin',
+        submittedBy,
+        createdBy: actor,
       });
     } catch (err) {
+      await recordKeyRaceAttempt(err, fields, student, submittedBy, actor);
       throw duplicateKeyError(err);
     }
 
@@ -293,11 +375,23 @@ router.patch(
 
     const fields = pickPaymentFields(req.body || {}, { partial: true });
     applyTermRules(fields, payment);
-    await assertUniqueReceipt(fields, payment._id);
+    const owner = await Student.findById(payment.student);
+    await assertUniqueReceipt(fields, {
+      excludeId: payment._id,
+      student: owner,
+      details: {
+        ...fields,
+        amount: fields.amount ?? payment.amount,
+        category: fields.category ?? payment.category,
+      },
+      actor: req.user?.username || 'admin',
+      submittedBy: 'admin',
+    });
     Object.assign(payment, fields);
     try {
       await payment.save();
     } catch (err) {
+      await recordKeyRaceAttempt(err, fields, owner, 'admin', req.user?.username || 'admin');
       throw duplicateKeyError(err);
     }
 
