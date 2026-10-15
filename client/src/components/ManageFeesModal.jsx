@@ -196,10 +196,11 @@ export default function ManageFeesModal({ open, onClose, studentId, onChanged })
               </div>
             </div>
 
-            {(s.phone || s.email || s.address) && (
+            {(s.phone || s.parentPhone || s.email || s.address) && (
               <div className="muted small" style={{ marginBottom: '0.75rem' }}>
                 {s.phone && <span>📞 {s.phone}</span>}
-                {s.email && <span>{s.phone ? ' · ' : ''}✉ {s.email}</span>}
+                {s.parentPhone && <span>{s.phone ? ' · ' : ''}👪 {s.parentPhone} (parent)</span>}
+                {s.email && <span>{s.phone || s.parentPhone ? ' · ' : ''}✉ {s.email}</span>}
                 {s.address && <div style={{ marginTop: 2 }}>📍 {s.address}</div>}
               </div>
             )}

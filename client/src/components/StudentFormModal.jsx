@@ -11,6 +11,7 @@ const EMPTY = {
   section: '',
   email: '',
   phone: '',
+  parentPhone: '',
   address: '',
   quota: 'ACAT',
 };
@@ -33,6 +34,7 @@ export default function StudentFormModal({ open, onClose, onSaved, student = nul
             section: student.section || '',
             email: student.email || '',
             phone: student.phone || '',
+            parentPhone: student.parentPhone || '',
             address: student.address || '',
             quota: student.quota || 'ACAT',
           }
@@ -110,8 +112,13 @@ export default function StudentFormModal({ open, onClose, onSaved, student = nul
           <Field label="Email">
             <Input type="email" value={form.email} onChange={set('email')} placeholder="name@college.edu" />
           </Field>
-          <Field label="Phone">
+          <Field label="Student Phone">
             <Input value={form.phone} onChange={set('phone')} placeholder="98xxxxxxx" />
+          </Field>
+        </div>
+        <div className="grid-2">
+          <Field label="Parent Phone">
+            <Input value={form.parentPhone} onChange={set('parentPhone')} placeholder="98xxxxxxx" />
           </Field>
         </div>
         <Field label="Address">

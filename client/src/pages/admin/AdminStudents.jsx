@@ -27,6 +27,7 @@ const EXPORT_COLUMNS = [
   { header: 'Year', get: (s) => s.year || '' },
   { header: 'Quota', get: (s) => s.quota },
   { header: 'Student Phone', get: (s) => s.phone || '' },
+  { header: 'Parent Phone', get: (s) => s.parentPhone || '' },
   { header: 'Address', get: (s) => s.address || '' },
   { header: 'Tuition Fee', get: (s) => Number(s.tuitionFee || 0), money: true },
   { header: 'Hostel Fee', get: (s) => Number(s.hostelFee || 0), money: true },
@@ -221,6 +222,7 @@ export default function AdminStudents() {
                       <td>
                         <div>{s.name}</div>
                         {s.phone && <div className="muted small">{s.phone}</div>}
+                        {s.parentPhone && <div className="muted small">Parent {s.parentPhone}</div>}
                         {s.address && (
                           <div
                             className="muted small"
