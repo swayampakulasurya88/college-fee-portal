@@ -187,6 +187,9 @@ export default function StudentDashboard() {
               {quotaShort[s.quota] || s.quota} quota
             </span>
           )}
+          {s.address && (
+            <p className="muted small" style={{ marginTop: 6 }}>📍 {s.address}</p>
+          )}
         </div>
         <div className="page-actions">
           <button className="btn btn-ghost" onClick={() => load(true)}>

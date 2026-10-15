@@ -32,6 +32,8 @@ function normalize(doc) {
     section: doc.section || '',
     email: doc.email || '',
     phone: doc.phone || '',
+    parentPhone: doc.parentPhone || '',
+    address: doc.address || '',
     quota: (doc.quota || 'ACAT').toUpperCase(),
     active: doc.active !== false,
     tuitionFee,
@@ -97,6 +99,8 @@ function pickStudentFields(body, { requireCore = false } = {}) {
   setIf('section', (v) => String(v).trim());
   setIf('email', (v) => String(v).trim().toLowerCase());
   setIf('phone', (v) => String(v).trim());
+  setIf('parentPhone', (v) => String(v).trim());
+  setIf('address', (v) => String(v).trim());
   setIf('quota', (v) => String(v).trim().toUpperCase());
   setIf('active', (v) => Boolean(v));
 
@@ -150,7 +154,7 @@ router.get(
     const match = {};
     if (q) {
       const rx = new RegExp(escapeRegex(q), 'i');
-      match.$or = [{ rollNumber: rx }, { name: rx }, { college: rx }, { branch: rx }, { phone: rx }];
+      match.$or = [{ rollNumber: rx }, { name: rx }, { college: rx }, { branch: rx }, { phone: rx }, { address: rx }];
     }
     if (QUOTAS.includes(quota)) match.quota = quota;
 

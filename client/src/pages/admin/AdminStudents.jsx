@@ -27,6 +27,7 @@ const EXPORT_COLUMNS = [
   { header: 'Year', get: (s) => s.year || '' },
   { header: 'Quota', get: (s) => s.quota },
   { header: 'Student Phone', get: (s) => s.phone || '' },
+  { header: 'Address', get: (s) => s.address || '' },
   { header: 'Tuition Fee', get: (s) => Number(s.tuitionFee || 0), money: true },
   { header: 'Hostel Fee', get: (s) => Number(s.hostelFee || 0), money: true },
   { header: 'Mess Fee', get: (s) => Number(s.messFee || 0), money: true },
@@ -158,7 +159,7 @@ export default function AdminStudents() {
       <div className="toolbar">
         <div className="search">
           <Input
-            placeholder="Search by roll number, name, college, branch or phone…"
+            placeholder="Search by roll number, name, college, branch, phone or address…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -220,6 +221,15 @@ export default function AdminStudents() {
                       <td>
                         <div>{s.name}</div>
                         {s.phone && <div className="muted small">{s.phone}</div>}
+                        {s.address && (
+                          <div
+                            className="muted small"
+                            title={s.address}
+                            style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                          >
+                            {s.address}
+                          </div>
+                        )}
                       </td>
                       <td>
                         {s.college && <div style={{ fontWeight: 600 }}>{s.college}</div>}

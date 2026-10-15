@@ -29,7 +29,7 @@ function parse(text) {
   const first = splitRow(lines[0]).map((c) => c.toLowerCase());
   const looksHeader = first.some((c) => /roll|name|fee|college|branch|phone|dept/.test(c));
 
-  let map = { rollNumber: 0, name: 1, totalFee: 2, college: 3, branch: 4, year: 5, section: 6, phone: 7 };
+  let map = { rollNumber: 0, name: 1, totalFee: 2, college: 3, branch: 4, year: 5, section: 6, phone: 7, address: 8 };
   let rows = lines;
 
   if (looksHeader) {
@@ -44,6 +44,7 @@ function parse(text) {
       else if (/section|sec\b/.test(c)) map.section = i;
       else if (/phone|mobile|contact/.test(c)) map.phone = i;
       else if (/mail/.test(c)) map.email = i;
+      else if (/address|addr|residence/.test(c)) map.address = i;
     });
     rows = lines.slice(1);
   }
@@ -63,6 +64,7 @@ function parse(text) {
         section: pick(map.section),
         phone: pick(map.phone),
         ...(map.email !== undefined ? { email: pick(map.email) } : {}),
+        ...(map.address !== undefined ? { address: pick(map.address) } : {}),
       };
     })
     .filter((s) => s.rollNumber);

@@ -11,6 +11,7 @@ const EMPTY = {
   section: '',
   email: '',
   phone: '',
+  address: '',
   quota: 'ACAT',
 };
 
@@ -32,6 +33,7 @@ export default function StudentFormModal({ open, onClose, onSaved, student = nul
             section: student.section || '',
             email: student.email || '',
             phone: student.phone || '',
+            address: student.address || '',
             quota: student.quota || 'ACAT',
           }
         : EMPTY,
@@ -112,6 +114,13 @@ export default function StudentFormModal({ open, onClose, onSaved, student = nul
             <Input value={form.phone} onChange={set('phone')} placeholder="98xxxxxxx" />
           </Field>
         </div>
+        <Field label="Address">
+          <Input
+            value={form.address}
+            onChange={set('address')}
+            placeholder="House / street, village or town, district, state — PIN"
+          />
+        </Field>
         <div className="grid-2">
           <Field label="Quota" required hint="Sets the term-wise tuition rate (ACAT ₹18,750 · BCAT/Spot ₹31,250 per term).">
             <Select value={form.quota} onChange={set('quota')}>

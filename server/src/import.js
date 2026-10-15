@@ -47,6 +47,7 @@ const KEY_MAP = [
   [/section|sec\b/i, 'section'],
   [/mail/i, 'email'],
   [/phone|mobile|contact|cell/i, 'phone'],
+  [/address|addr|residence|house|street|village|town|city|district|state|pincode|pin\s*code|postal/i, 'address'],
 ];
 
 function keyFor(header) {
@@ -89,12 +90,23 @@ function toRecords(text, ext) {
   const looksHeader = header.filter(Boolean).length >= 2;
   const cols = looksHeader
     ? header
-    : ['rollNumber', 'name', 'college', 'branch', 'year', 'section', 'phone', 'email'];
+    : ['rollNumber', 'name', 'college', 'branch', 'year', 'section', 'phone', 'email', 'address'];
   const body = looksHeader ? rows.slice(1) : rows;
 
   return body.map((cells) => {
     const obj = {};
-    cols.forEach((key, i) => { if (key) obj[key] = cells[i]; });
+    cols.forEach((key, i) => {
+      if (!key) return;
+      const v = cells[i];
+      // Address often arrives as several columns (village, district, state, PIN).
+      // Join them instead of letting the last one win.
+      if (key === 'address' && obj.address !== undefined) {
+        const extra = String(v ?? '').trim();
+        if (extra) obj.address = `${obj.address}, ${extra}`;
+      } else {
+        obj[key] = v;
+      }
+    });
     return obj;
   });
 }
@@ -111,8 +123,9 @@ function normalizeRecord(input) {
   const rollNumber = clean(rec.rollNumber);
   if (!rollNumber) return null;
   out.rollNumber = rollNumber.toUpperCase();
-  out.name = clean(rec.name) || out.rollNumber;
-  for (const key of ['college', 'branch', 'year', 'section', 'email', 'phone']) {
+  const name = clean(rec.name);
+  if (name !== undefined) out.name = name;
+  for (const key of ['college', 'branch', 'year', 'section', 'email', 'phone', 'address']) {
     const v = clean(rec[key]);
     if (v !== undefined) out[key] = key === 'email' ? v.toLowerCase() : v;
   }
@@ -166,7 +179,7 @@ async function run() {
       await existing.save();
       updated += 1;
     } else {
-      await Student.create(rec);
+      await Student.create({ name: rec.rollNumber, ...rec });
       created += 1;
     }
   }

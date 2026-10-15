@@ -19,6 +19,10 @@ const studentSchema = new mongoose.Schema(
     section: { type: String, trim: true, default: '' },
     email: { type: String, trim: true, lowercase: true, default: '' },
     phone: { type: String, trim: true, default: '' },
+    // Parent/guardian phone number (from the student directory).
+    parentPhone: { type: String, trim: true, default: '' },
+    // Residential address (imported from the student directory, editable by admin).
+    address: { type: String, trim: true, default: '' },
     // Admission quota — drives the per-term tuition rate.
     //   ACAT = came through rank/counselling, BCAT = management quota, SPOT = spot admission.
     quota: {
