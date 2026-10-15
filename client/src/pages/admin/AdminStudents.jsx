@@ -13,8 +13,28 @@ import {
 import StudentFormModal from '../../components/StudentFormModal.jsx';
 import BulkImportModal from '../../components/BulkImportModal.jsx';
 import ManageFeesModal from '../../components/ManageFeesModal.jsx';
+import { exportToExcel, exportToPdf } from '../../export.js';
 
 const LIMIT = 20;
+
+const STATUS_LABEL = { paid: 'Fully Paid', partial: 'Partial', unpaid: 'Unpaid' };
+
+const EXPORT_COLUMNS = [
+  { header: 'Roll No.', get: (s) => s.rollNumber },
+  { header: 'Name', get: (s) => s.name },
+  { header: 'College', get: (s) => s.college || '' },
+  { header: 'Branch', get: (s) => s.branch || '' },
+  { header: 'Year', get: (s) => s.year || '' },
+  { header: 'Quota', get: (s) => s.quota },
+  { header: 'Student Phone', get: (s) => s.phone || '' },
+  { header: 'Tuition Fee', get: (s) => Number(s.tuitionFee || 0), money: true },
+  { header: 'Hostel Fee', get: (s) => Number(s.hostelFee || 0), money: true },
+  { header: 'Mess Fee', get: (s) => Number(s.messFee || 0), money: true },
+  { header: 'Grand Total', get: (s) => Number(s.totalFee || 0), money: true },
+  { header: 'Paid', get: (s) => Number(s.totalPaid || 0), money: true },
+  { header: 'Due', get: (s) => Number(s.totalDue || 0), money: true },
+  { header: 'Status', get: (s) => STATUS_LABEL[s.status] || s.status || '' },
+];
 
 export default function AdminStudents() {
   const toast = useToast();
@@ -33,6 +53,7 @@ export default function AdminStudents() {
   const [manageId, setManageId] = useState(null);
   const [toDelete, setToDelete] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState('');
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -77,6 +98,38 @@ export default function AdminStudents() {
 
   const pages = Math.max(1, Math.ceil(total / LIMIT));
 
+  // Export ALL students matching the current filters (not just the visible page).
+  const exportData = async (kind) => {
+    setExporting(kind);
+    try {
+      const res = await api(`/students${qs({ q, status, quota, page: 1, limit: 500 })}`);
+      const rows = res.data || [];
+      if (!rows.length) {
+        toast.info('Nothing to export for the current filters.');
+        return;
+      }
+      const fees = rows.reduce(
+        (a, s) => ({ total: a.total + Number(s.totalFee || 0), paid: a.paid + Number(s.totalPaid || 0), due: a.due + Number(s.totalDue || 0) }),
+        { total: 0, paid: 0, due: 0 },
+      );
+      const filters = [q && `search "${q}"`, status && `status ${STATUS_LABEL[status]}`, quota && `quota ${quota}`].filter(Boolean).join(', ');
+      const opts = {
+        columns: EXPORT_COLUMNS,
+        rows,
+        filename: `Students_${new Date().toISOString().slice(0, 10)}.${kind === 'excel' ? 'xlsx' : 'pdf'}`,
+        title: 'Student Fee Report',
+        subtitle: `${rows.length} students${filters ? ` · ${filters}` : ''} · Total ${inr(fees.total)} · Paid ${inr(fees.paid)} · Due ${inr(fees.due)}`,
+      };
+      if (kind === 'excel') await exportToExcel({ ...opts, sheetName: 'Students' });
+      else await exportToPdf(opts);
+      toast.success(`${kind === 'excel' ? 'Excel' : 'PDF'} downloaded (${rows.length} students).`);
+    } catch (err) {
+      toast.error(`Export failed: ${err.message}`);
+    } finally {
+      setExporting('');
+    }
+  };
+
   return (
     <>
       <div className="page-head">
@@ -87,6 +140,12 @@ export default function AdminStudents() {
           </p>
         </div>
         <div className="page-actions">
+          <button className="btn btn-ghost" disabled={!!exporting} onClick={() => exportData('excel')}>
+            {exporting === 'excel' ? 'Exporting…' : '⬇ Excel'}
+          </button>
+          <button className="btn btn-ghost" disabled={!!exporting} onClick={() => exportData('pdf')}>
+            {exporting === 'pdf' ? 'Exporting…' : '⬇ PDF'}
+          </button>
           <button className="btn btn-ghost" onClick={() => setBulkOpen(true)}>
             ⬆ Bulk import
           </button>

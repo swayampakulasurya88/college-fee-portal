@@ -8,6 +8,7 @@ import Login from './pages/Login.jsx';
 import StudentDashboard from './pages/student/StudentDashboard.jsx';
 import AdminOverview from './pages/admin/AdminOverview.jsx';
 import AdminStudents from './pages/admin/AdminStudents.jsx';
+import AdminStpo from './pages/admin/AdminStpo.jsx';
 import AdminFeeStructure from './pages/admin/AdminFeeStructure.jsx';
 import AdminPayments from './pages/admin/AdminPayments.jsx';
 import AdminMess from './pages/admin/AdminMess.jsx';
@@ -52,6 +53,7 @@ function AdminLayout() {
   const nav = [
     { to: '/admin', end: true, icon: '🏠', label: 'Dashboard' },
     { to: '/admin/students', icon: '🎓', label: 'Students' },
+    { to: '/admin/stpo', icon: '🧩', label: 'STPO' },
     { to: '/admin/fees', icon: '🧮', label: 'Fee Structure' },
     { to: '/admin/payments', icon: '💰', label: 'Fee Payments' },
     { to: '/admin/mess', icon: '🍽️', label: 'Mess Fees' },
@@ -84,6 +86,7 @@ export default function App() {
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminOverview />} />
           <Route path="/admin/students" element={<AdminStudents />} />
+          <Route path="/admin/stpo" element={<AdminStpo />} />
           <Route path="/admin/fees" element={<AdminFeeStructure />} />
           <Route path="/admin/payments" element={<AdminPayments />} />
           <Route path="/admin/mess" element={<AdminMess />} />

@@ -209,6 +209,7 @@ thead th {
 tbody td { padding: 0.7rem 0.8rem; border-bottom: 1px solid var(--slate-100); vertical-align: middle; }
 tbody tr:hover { background: var(--slate-50); }
 tbody tr:last-child td { border-bottom: none; }
+tfoot td { padding: 0.7rem 0.8rem; border-top: 2px solid var(--slate-200); background: var(--slate-50); }
 td.right, th.right { text-align: right; }
 .row-actions { display: flex; gap: 0.35rem; justify-content: flex-end; }
 
