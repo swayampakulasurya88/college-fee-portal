@@ -193,11 +193,11 @@ export default function PaymentFormModal({
         </div>
 
         <div className="grid-2">
-          <Field label="Transaction / UTR ID" hint="From the student's receipt">
+          <Field label="Transaction / UTR ID" hint="From the student's receipt · must be unique">
             <Input value={form.transactionId} onChange={set('transactionId')} placeholder="e.g. 4012XXXXXX" />
           </Field>
-          <Field label="Receipt No.">
-            <Input value={form.receiptNo} onChange={set('receiptNo')} placeholder="RCPT-1042" />
+          <Field label="Receipt No." hint="Must be unique · leave blank to auto-generate">
+            <Input value={form.receiptNo} onChange={set('receiptNo')} placeholder="Auto-generated" />
           </Field>
         </div>
 

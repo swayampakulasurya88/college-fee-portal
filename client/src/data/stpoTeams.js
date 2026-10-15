@@ -12,7 +12,7 @@ export const STPO_CLASS_ID = '25KTAIDH';
 
 export const STPO_TEAMS = [
   {
-    team: '25KTAIDH_7',
+    team: '25KTAIDH_6',
     members: [
       { rollNumber: '25B21A45E0', name: 'PAMPANA HEMANTH SAI', level: 'L1', studentPhone: '9346552679', parentPhone: '8500901357' },
       { rollNumber: '25B21A45B5', name: 'SANNAMURI SIVA SAI HARSHITHA', level: 'L2', studentPhone: '9959962759', parentPhone: '9701408264' },
@@ -21,7 +21,7 @@ export const STPO_TEAMS = [
     ],
   },
   {
-    team: '25KTAIDH_8',
+    team: '25KTAIDH_7',
     members: [
       { rollNumber: '25B21A4591', name: 'DASARI SAI SHIVA KANTH', level: 'L1', studentPhone: '9346609281', parentPhone: '6304706719' },
       { rollNumber: '25B21A45B4', name: 'GUNJI BHAGYASRI NAGALAKSHMI', level: 'L2', studentPhone: '8096629040', parentPhone: '9703025478' },
@@ -30,7 +30,7 @@ export const STPO_TEAMS = [
     ],
   },
   {
-    team: '25KTAIDH_11',
+    team: '25KTAIDH_8',
     members: [
       { rollNumber: '25B21A4589', name: 'PENUMAKA ANIL KUMAR', level: '-', studentPhone: '7386967258', parentPhone: '9666853384' },
       { rollNumber: '25B21A4590', name: 'SWAYAMPAKULA VENKATA SAI SURYA TEJA', level: 'L1', studentPhone: '8555822453', parentPhone: '8919699404' },
@@ -39,7 +39,7 @@ export const STPO_TEAMS = [
     ],
   },
   {
-    team: '25KTAIDH_18',
+    team: '25KTAIDH_11',
     members: [
       { rollNumber: '25B21A4597', name: 'MAGANTI PRABHAKAR', level: 'L1', studentPhone: '9121499961', parentPhone: '9704275749' },
       { rollNumber: '25B21A45C4', name: 'VEDULLAPALLI NISHITHA', level: 'L2', studentPhone: '8179298586', parentPhone: '8297655638' },
@@ -49,8 +49,6 @@ export const STPO_TEAMS = [
     ],
   },
   {
-    // NOTE: team number to confirm with the admin — the source list labelled
-    // this group 25KTAIDH_18 as well.
     team: '25KTAIDH_18',
     members: [
       { rollNumber: '25B21A45A1', name: 'GOLLAMANDALA SHALINI', level: '-', studentPhone: '7815872900', parentPhone: '7993568678' },

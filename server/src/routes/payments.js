@@ -13,6 +13,70 @@ router.use(authRequired);
 
 const METHODS = ['cash', 'upi', 'card', 'netbanking', 'cheque', 'dd', 'other'];
 
+const RECEIPT_PREFIX = 'KIET';
+
+// Builds the next free receipt number, e.g. KIET-2026-0007.
+async function generateReceiptNo() {
+  const year = new Date().getFullYear();
+  const prefix = `${RECEIPT_PREFIX}-${year}-`;
+  const last = await Payment.findOne({ receiptNo: { $regex: `^${prefix}` } })
+    .sort({ receiptNo: -1 })
+    .select('receiptNo')
+    .lean();
+  let n = 1;
+  if (last?.receiptNo) {
+    const m = String(last.receiptNo).match(/(\d+)\s*$/);
+    if (m) n = Number(m[1]) + 1;
+  }
+  for (let i = 0; i < 200; i += 1) {
+    const candidate = `${prefix}${String(n + i).padStart(4, '0')}`;
+    // eslint-disable-next-line no-await-in-loop
+    const clash = await Payment.findOne({ receiptNo: candidate }).select('_id').lean();
+    if (!clash) return candidate;
+  }
+  return `${prefix}${Date.now().toString().slice(-6)}`;
+}
+
+// Rejects a payment whose receipt number or transaction id is already in use.
+async function assertUniqueReceipt({ receiptNo, transactionId }, excludeId = null) {
+  const jobs = [];
+  if (receiptNo) {
+    const q = { receiptNo };
+    if (excludeId) q._id = { $ne: excludeId };
+    jobs.push(
+      Payment.findOne(q)
+        .select('_id')
+        .lean()
+        .then((dup) => {
+          if (dup) throw new HttpError(409, `Receipt No. ${receiptNo} is already used on another payment. Receipt numbers must be unique.`);
+        }),
+    );
+  }
+  if (transactionId) {
+    const q = { transactionId };
+    if (excludeId) q._id = { $ne: excludeId };
+    jobs.push(
+      Payment.findOne(q)
+        .select('_id')
+        .lean()
+        .then((dup) => {
+          if (dup) throw new HttpError(409, `Transaction / UTR ID ${transactionId} is already recorded. Duplicate receipts are not allowed.`);
+        }),
+    );
+  }
+  await Promise.all(jobs);
+}
+
+// Turns a Mongo duplicate-key error into a readable 409.
+function duplicateKeyError(err) {
+  if (err?.code !== 11000) return err;
+  const field = Object.keys(err.keyPattern || err.keyValue || {})[0];
+  if (field === 'receiptNo') return new HttpError(409, 'That receipt number already exists. Receipt numbers must be unique.');
+  if (field === 'transactionId') return new HttpError(409, 'That transaction / UTR ID is already recorded. Duplicate receipts are not allowed.');
+  return new HttpError(409, 'A payment with the same receipt details already exists.');
+}
+
+
 function pickPaymentFields(body, { partial = false, requireTransaction = false } = {}) {
   const out = {};
   if (body.amount !== undefined) {
@@ -194,12 +258,22 @@ router.post(
 
     const fields = pickPaymentFields(req.body || {}, { requireTransaction: isStudent });
     applyTermRules(fields);
-    const payment = await Payment.create({
-      ...fields,
-      student: student._id,
-      submittedBy: isStudent ? 'student' : 'admin',
-      createdBy: isStudent ? student.rollNumber : req.user?.username || 'admin',
-    });
+    // Every payment gets a unique receipt number (auto-issued when the admin
+    // leaves the field blank).
+    if (!fields.receiptNo) fields.receiptNo = await generateReceiptNo();
+    await assertUniqueReceipt(fields);
+
+    let payment;
+    try {
+      payment = await Payment.create({
+        ...fields,
+        student: student._id,
+        submittedBy: isStudent ? 'student' : 'admin',
+        createdBy: isStudent ? student.rollNumber : req.user?.username || 'admin',
+      });
+    } catch (err) {
+      throw duplicateKeyError(err);
+    }
 
     const finance = await financeForStudent(student);
     res.status(201).json({
@@ -219,8 +293,13 @@ router.patch(
 
     const fields = pickPaymentFields(req.body || {}, { partial: true });
     applyTermRules(fields, payment);
+    await assertUniqueReceipt(fields, payment._id);
     Object.assign(payment, fields);
-    await payment.save();
+    try {
+      await payment.save();
+    } catch (err) {
+      throw duplicateKeyError(err);
+    }
 
     const student = await Student.findById(payment.student);
     const finance = await financeForStudent(student);

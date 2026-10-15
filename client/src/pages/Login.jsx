@@ -27,7 +27,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [mode, setMode] = useState('student');
   const [rollNumber, setRollNumber] = useState('');
-  const [username, setUsername] = useState('admin');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -161,8 +161,8 @@ export default function Login() {
             </div>
           ) : (
             <div className="login-hint">
-              Default admin credentials: <strong>admin / admin888ss</strong>. Change them in
-              <span className="mono"> server/.env</span>.
+              Staff access only. Sign in with the admin username and password issued
+              by the college office.
             </div>
           )}
         </div>

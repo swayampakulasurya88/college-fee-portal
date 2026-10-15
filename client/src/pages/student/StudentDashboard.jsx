@@ -330,7 +330,7 @@ export default function StudentDashboard() {
               </Field>
             </div>
             <div className="grid-2">
-              <Field label="Transaction / UTR ID" required hint="From your UPI / bank receipt">
+              <Field label="Transaction / UTR ID" required hint="From your UPI / bank receipt · each ID can be used only once">
                 <Input value={pay.transactionId} onChange={setPayField('transactionId')} placeholder="e.g. 4012XXXXXX" />
               </Field>
               <Field label="Payment method">

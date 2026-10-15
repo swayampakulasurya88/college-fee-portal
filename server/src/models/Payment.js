@@ -47,4 +47,15 @@ const paymentSchema = new mongoose.Schema(
 
 paymentSchema.plugin(jsonPlugin);
 
+// A receipt number / transaction reference may never repeat. Empty strings are
+// ignored by the partial filter so old rows without a reference stay valid.
+paymentSchema.index(
+  { receiptNo: 1 },
+  { unique: true, partialFilterExpression: { receiptNo: { $gt: '' } }, name: 'uniq_receiptNo' },
+);
+paymentSchema.index(
+  { transactionId: 1 },
+  { unique: true, partialFilterExpression: { transactionId: { $gt: '' } }, name: 'uniq_transactionId' },
+);
+
 export const Payment = mongoose.model('Payment', paymentSchema);
