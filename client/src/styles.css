@@ -335,6 +335,49 @@ td.right, th.right { text-align: right; }
 .totals-row strong { font-size: 1rem; }
 .print-only { display: none; }
 
+/* --------------------------- Payment calendar --------------------------- */
+.cal-toolbar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.cal-month-label { font-weight: 800; font-size: 1.05rem; color: var(--slate-800); min-width: 11rem; text-align: center; }
+.calendar-wrap { overflow-x: auto; }
+.calendar { min-width: 660px; }
+.cal-dow-row,
+.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.cal-dow-row { margin-bottom: 6px; }
+.cal-dow { text-align: center; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--slate-500); padding: 4px 0; }
+.cal-cell {
+  min-height: 86px;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  background: var(--white);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.cal-cell:hover { border-color: var(--indigo); box-shadow: var(--shadow-sm); }
+.cal-cell.is-empty { background: transparent; border-color: transparent; box-shadow: none; cursor: default; }
+.cal-cell.is-empty:hover { border-color: transparent; box-shadow: none; }
+.cal-cell.has-pay { background: var(--emerald-soft); border-color: #bbf7d0; }
+.cal-cell.is-today { outline: 2px solid var(--indigo); outline-offset: -2px; }
+.cal-cell.is-selected { border-color: var(--indigo); box-shadow: 0 0 0 2px var(--indigo-soft), 0 0 0 3px var(--indigo); }
+.cal-day { font-size: 0.8rem; font-weight: 800; color: var(--slate-700); }
+.cal-cell.is-today .cal-day { color: var(--indigo-dark); }
+.cal-amount { font-size: 0.82rem; font-weight: 800; color: var(--emerald); line-height: 1.15; }
+.cal-payers { font-size: 0.68rem; font-weight: 700; color: var(--slate-500); }
+.cal-bars { display: flex; gap: 3px; margin-top: auto; }
+.cal-bar { height: 4px; border-radius: 2px; flex: 1; min-width: 0; }
+.cal-bar-tuition { background: var(--indigo); }
+.cal-bar-hostel { background: var(--amber); }
+.cal-bar-mess { background: var(--emerald); }
+.cal-legend { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; font-size: 0.78rem; color: var(--slate-500); }
+.cal-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.cal-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
 /* --------------------------- Responsive --------------------------------- */
 @media (max-width: 1024px) {
   .two-col { grid-template-columns: 1fr; }
