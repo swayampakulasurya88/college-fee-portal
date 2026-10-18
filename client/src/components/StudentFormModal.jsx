@@ -13,6 +13,8 @@ const EMPTY = {
   phone: '',
   parentPhone: '',
   address: '',
+  loan: false,
+  loanNote: '',
   quota: 'ACAT',
 };
 
@@ -36,6 +38,8 @@ export default function StudentFormModal({ open, onClose, onSaved, student = nul
             phone: student.phone || '',
             parentPhone: student.parentPhone || '',
             address: student.address || '',
+            loan: student.loan === true,
+            loanNote: student.loanNote || '',
             quota: student.quota || 'ACAT',
           }
         : EMPTY,
@@ -136,6 +140,23 @@ export default function StudentFormModal({ open, onClose, onSaved, student = nul
               <option value="SPOT">SPOT — spot admission</option>
             </Select>
           </Field>
+        </div>
+        <div className="grid-2">
+          <Field label="Education loan" hint="When on, the fee is shown as fully settled — ₹0 due.">
+            <label className="inline" style={{ gap: '0.5rem', cursor: 'pointer', paddingTop: '0.35rem' }}>
+              <input
+                type="checkbox"
+                checked={form.loan}
+                onChange={(e) => setForm((f) => ({ ...f, loan: e.target.checked }))}
+              />
+              <span>{form.loan ? 'Fee covered by loan (₹0 due)' : 'Not on loan'}</span>
+            </label>
+          </Field>
+          {form.loan && (
+            <Field label="Loan note (optional)" hint="Bank / sanction number.">
+              <Input value={form.loanNote} onChange={set('loanNote')} placeholder="e.g. SBI sanction 12345" />
+            </Field>
+          )}
         </div>
         <p className="muted small" style={{ marginTop: '-0.4rem' }}>
           Fixed tuition & hostel fees are assigned term-wise from the “Fee Structure” page. The monthly mess

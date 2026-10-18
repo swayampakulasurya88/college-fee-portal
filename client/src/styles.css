@@ -75,6 +75,8 @@ button { font-family: inherit; }
 .btn-danger:hover:not(:disabled) { background: #ffe4e6; }
 .btn-success { background: var(--emerald); color: #fff; }
 .btn-success:hover:not(:disabled) { background: #047857; }
+.btn-loan { background: var(--emerald-soft); color: #065f46; border-color: #a7f3d0; }
+.btn-loan:hover:not(:disabled) { background: #d1fae5; }
 .btn-sm { padding: 0.38rem 0.7rem; font-size: 0.8rem; }
 .btn-block { width: 100%; }
 

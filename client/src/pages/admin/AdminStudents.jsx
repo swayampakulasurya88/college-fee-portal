@@ -36,6 +36,7 @@ const EXPORT_COLUMNS = [
   { header: 'Paid', get: (s) => Number(s.totalPaid || 0), money: true },
   { header: 'Due', get: (s) => Number(s.totalDue || 0), money: true },
   { header: 'Status', get: (s) => STATUS_LABEL[s.status] || s.status || '' },
+  { header: 'Loan', get: (s) => (s.loan ? 'Yes' : '') },
 ];
 
 export default function AdminStudents() {
@@ -47,6 +48,7 @@ export default function AdminStudents() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [quota, setQuota] = useState('');
+  const [loanFilter, setLoanFilter] = useState('');
   const [page, setPage] = useState(1);
 
   const [addOpen, setAddOpen] = useState(false);
@@ -54,6 +56,7 @@ export default function AdminStudents() {
   const [editStudent, setEditStudent] = useState(null);
   const [manageId, setManageId] = useState(null);
   const [toDelete, setToDelete] = useState(null);
+  const [loanStudent, setLoanStudent] = useState(null);
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState('');
 
@@ -68,7 +71,7 @@ export default function AdminStudents() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api(`/students${qs({ q, status, quota, page, limit: LIMIT })}`);
+      const res = await api(`/students${qs({ q, status, quota, loan: loanFilter, page, limit: LIMIT })}`);
       setRows(res.data);
       setTotal(res.total);
     } catch (err) {
@@ -76,7 +79,7 @@ export default function AdminStudents() {
     } finally {
       setLoading(false);
     }
-  }, [q, status, quota, page, toast]);
+  }, [q, status, quota, loanFilter, page, toast]);
 
   useEffect(() => {
     load();
@@ -100,11 +103,31 @@ export default function AdminStudents() {
 
   const pages = Math.max(1, Math.ceil(total / LIMIT));
 
+  const confirmLoan = async () => {
+    if (!loanStudent) return;
+    const next = !loanStudent.loan;
+    setBusy(true);
+    try {
+      await api(`/students/${loanStudent.id}`, { method: 'PATCH', body: { loan: next } });
+      toast.success(
+        next
+          ? `${loanStudent.rollNumber} marked as loan — fee cleared to ₹0.`
+          : `Loan removed from ${loanStudent.rollNumber}.`,
+      );
+      setLoanStudent(null);
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   // Export ALL students matching the current filters (not just the visible page).
   const exportData = async (kind) => {
     setExporting(kind);
     try {
-      const res = await api(`/students${qs({ q, status, quota, page: 1, limit: 500 })}`);
+      const res = await api(`/students${qs({ q, status, quota, loan: loanFilter, page: 1, limit: 500 })}`);
       const rows = res.data || [];
       if (!rows.length) {
         toast.info('Nothing to export for the current filters.');
@@ -114,7 +137,12 @@ export default function AdminStudents() {
         (a, s) => ({ total: a.total + Number(s.totalFee || 0), paid: a.paid + Number(s.totalPaid || 0), due: a.due + Number(s.totalDue || 0) }),
         { total: 0, paid: 0, due: 0 },
       );
-      const filters = [q && `search "${q}"`, status && `status ${STATUS_LABEL[status]}`, quota && `quota ${quota}`].filter(Boolean).join(', ');
+      const filters = [
+        q && `search "${q}"`,
+        status && `status ${STATUS_LABEL[status]}`,
+        quota && `quota ${quota}`,
+        loanFilter && (loanFilter === 'true' ? 'loan students' : 'non-loan students'),
+      ].filter(Boolean).join(', ');
       const opts = {
         columns: EXPORT_COLUMNS,
         rows,
@@ -177,6 +205,11 @@ export default function AdminStudents() {
           <option value="BCAT">BCAT</option>
           <option value="SPOT">SPOT</option>
         </Select>
+        <Select value={loanFilter} onChange={(e) => { setLoanFilter(e.target.value); setPage(1); }}>
+          <option value="">All students</option>
+          <option value="true">Loan students</option>
+          <option value="false">Non-loan</option>
+        </Select>
         <button className="btn btn-ghost" onClick={load}>
           ↻ Refresh
         </button>
@@ -220,7 +253,14 @@ export default function AdminStudents() {
                     <tr key={s.id}>
                       <td style={{ fontWeight: 700 }}>{s.rollNumber}</td>
                       <td>
-                        <div>{s.name}</div>
+                        <div>
+                          {s.name}
+                          {s.loan && (
+                            <span className="chip chip-emerald" style={{ marginLeft: 6 }}>
+                              Loan
+                            </span>
+                          )}
+                        </div>
                         {s.phone && <div className="muted small">{s.phone}</div>}
                         {s.parentPhone && <div className="muted small">Parent {s.parentPhone}</div>}
                         {s.address && (
@@ -258,6 +298,13 @@ export default function AdminStudents() {
                           </button>
                           <button className="btn btn-ghost btn-sm" onClick={() => setEditStudent(s)}>
                             Edit
+                          </button>
+                          <button
+                            className={s.loan ? 'btn btn-loan btn-sm' : 'btn btn-ghost btn-sm'}
+                            title={s.loan ? 'Remove loan — recalculate dues' : 'Mark as loan — clears the fee to ₹0'}
+                            onClick={() => setLoanStudent(s)}
+                          >
+                            {s.loan ? 'Loan ✓' : 'Loan'}
                           </button>
                           <button className="btn btn-danger btn-sm" onClick={() => setToDelete(s)}>
                             Delete
@@ -309,6 +356,23 @@ export default function AdminStudents() {
         busy={busy}
         onConfirm={confirmDelete}
         onClose={() => setToDelete(null)}
+      />
+      <ConfirmDialog
+        open={Boolean(loanStudent)}
+        title={
+          loanStudent?.loan
+            ? `Remove loan from ${loanStudent?.rollNumber}?`
+            : `Mark ${loanStudent?.rollNumber || 'student'} as loan?`
+        }
+        message={
+          loanStudent?.loan
+            ? 'Their fee dues will be calculated normally again (payments vs. fees).'
+            : 'Their entire fee will be shown as settled — the Grand Total due becomes ₹0. You can undo this any time by clicking Loan again.'
+        }
+        confirmLabel={loanStudent?.loan ? 'Remove loan' : 'Mark as loan'}
+        busy={busy}
+        onConfirm={confirmLoan}
+        onClose={() => setLoanStudent(null)}
       />
     </>
   );

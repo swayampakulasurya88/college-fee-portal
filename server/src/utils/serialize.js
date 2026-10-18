@@ -20,6 +20,8 @@ export function studentPayload(student, finance = {}) {
     phone: raw.phone || '',
     parentPhone: raw.parentPhone || '',
     address: raw.address || '',
+    loan: raw.loan === true,
+    loanNote: raw.loanNote || '',
     quota: (raw.quota || 'ACAT').toUpperCase(),
     active: raw.active !== false,
     tuitionFee: Number(raw.tuitionFee || 0),

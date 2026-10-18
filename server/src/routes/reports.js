@@ -12,14 +12,36 @@ import { authRequired, adminOnly, studentOnly } from '../middleware/auth.js';
 const router = Router();
 router.use(authRequired);
 
+// Sums one payment category (used to see what loan students already paid).
+const sumCategory = (category) => ({
+  $sum: {
+    $map: {
+      input: {
+        $filter: {
+          input: '$pays',
+          as: 'p',
+          cond: { $eq: [{ $ifNull: ['$$p.category', 'tuition'] }, category] },
+        },
+      },
+      as: 'p',
+      in: '$$p.amount',
+    },
+  },
+});
+
 // Adds totalPaid / totalFee (incl. monthly mess) / totalDue to every student row.
+// Loan students are treated as fully settled — the loan covers the balance.
 const PER_STUDENT_PIPELINE = [
   { $lookup: { from: 'payments', localField: '_id', foreignField: 'student', as: 'pays' } },
   { $lookup: { from: 'messbills', localField: '_id', foreignField: 'student', as: 'mess' } },
   {
     $addFields: {
-      totalPaid: { $sum: '$pays.amount' },
+      realPaid: { $sum: '$pays.amount' },
+      tuitionRealPaid: sumCategory('tuition'),
+      hostelRealPaid: sumCategory('hostel'),
+      messRealPaid: sumCategory('mess'),
       messFee: { $sum: '$mess.amount' },
+      isLoan: { $eq: [{ $ifNull: ['$loan', false] }, true] },
       totalFee: {
         $add: [
           { $ifNull: ['$tuitionFee', 0] },
@@ -29,6 +51,7 @@ const PER_STUDENT_PIPELINE = [
       },
     },
   },
+  { $addFields: { totalPaid: { $cond: ['$isLoan', '$totalFee', '$realPaid'] } } },
   { $addFields: { totalDue: { $subtract: ['$totalFee', '$totalPaid'] } } },
 ];
 
@@ -40,7 +63,7 @@ router.get(
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const [fixedRows, messRows, payRows, countRows, todayRows, byCategory, defaulters, messages] =
+    const [fixedRows, messRows, payRows, countRows, todayRows, byCategory, defaulters, messages, loanRows] =
       await Promise.all([
       Student.aggregate([
         {
@@ -100,6 +123,24 @@ router.get(
         { $project: { pays: 0, mess: 0 } },
       ]),
       Message.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+      Student.aggregate([
+        ...PER_STUDENT_PIPELINE,
+        { $match: { isLoan: true } },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            total: { $sum: { $subtract: ['$totalFee', '$realPaid'] } },
+            tuition: {
+              $sum: { $max: [{ $subtract: [{ $ifNull: ['$tuitionFee', 0] }, '$tuitionRealPaid'] }, 0] },
+            },
+            hostel: {
+              $sum: { $max: [{ $subtract: [{ $ifNull: ['$hostelFee', 0] }, '$hostelRealPaid'] }, 0] },
+            },
+            mess: { $sum: { $max: [{ $subtract: ['$messFee', '$messRealPaid'] }, 0] } },
+          },
+        },
+      ]),
     ]);
 
     const fixed = fixedRows?.[0] || {};
@@ -114,6 +155,15 @@ router.get(
     const grandTotal = round2(tuitionFee + hostelFee + messFee);
     const totalPaid = round2(payments.totalPaid || 0);
 
+    // How much of the billed fees education loans have already covered.
+    const loanRow = loanRows?.[0] || {};
+    const loanCovered = round2(loanRow.total || 0);
+    const loanByCategory = {
+      tuition: round2(loanRow.tuition || 0),
+      hostel: round2(loanRow.hostel || 0),
+      mess: round2(loanRow.mess || 0),
+    };
+
     const paidByCategory = { tuition: 0, hostel: 0, mess: 0 };
     (byCategory || []).forEach((row) => {
       if (paidByCategory[row._id] !== undefined) paidByCategory[row._id] = round2(row.amount);
@@ -124,23 +174,26 @@ router.get(
       if (messageCounts[m._id] !== undefined) messageCounts[m._id] = m.count;
     });
 
-    const categoryTotals = (fee, paid) => ({
+    const categoryTotals = (fee, paid, covered = 0) => ({
       fee,
       paid,
-      due: round2(Math.max(fee - paid, 0)),
+      loanCovered: covered,
+      due: round2(Math.max(fee - paid - covered, 0)),
     });
 
     res.json({
       grandTotal,
       totalPaid,
-      totalDue: round2(grandTotal - totalPaid),
+      loanCovered,
+      loanCount: loanRow.count || 0,
+      totalDue: round2(grandTotal - totalPaid - loanCovered),
       tuitionFee,
       hostelFee,
       messFee,
       categories: {
-        tuition: categoryTotals(tuitionFee, paidByCategory.tuition),
-        hostel: categoryTotals(hostelFee, paidByCategory.hostel),
-        mess: categoryTotals(messFee, paidByCategory.mess),
+        tuition: categoryTotals(tuitionFee, paidByCategory.tuition, loanByCategory.tuition),
+        hostel: categoryTotals(hostelFee, paidByCategory.hostel, loanByCategory.hostel),
+        mess: categoryTotals(messFee, paidByCategory.mess, loanByCategory.mess),
       },
       studentCount: fixed.studentCount || 0,
       paymentCount: payRows?.[0]?.paymentCount || 0,

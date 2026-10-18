@@ -38,17 +38,28 @@ export function buildFinance({
   paymentCount = 0,
   messBillCount = 0,
   terms,
+  loan = false,
 } = {}) {
   const t = round2(tuitionFee);
   const h = round2(hostelFee);
   const m = round2(messFee);
 
-  const tuitionPaid = round2(paidByCategory.tuition || 0);
-  const hostelPaid = round2(paidByCategory.hostel || 0);
-  const messPaid = round2(paidByCategory.mess || 0);
+  // Education-loan students are treated as fully settled: the loan covers every
+  // head, so the paid amounts mirror the fees and nothing is ever due.
+  const tuitionPaid = loan ? t : round2(paidByCategory.tuition || 0);
+  const hostelPaid = loan ? h : round2(paidByCategory.hostel || 0);
+  const messPaid = loan ? m : round2(paidByCategory.mess || 0);
 
   const totalPaid = round2(tuitionPaid + hostelPaid + messPaid);
   const totalFee = round2(t + h + m);
+
+  const termRows = { tuition: [], hostel: [], ...(terms || {}) };
+  const finalTerms = loan
+    ? {
+        tuition: (termRows.tuition || []).map((row) => ({ ...row, paid: round2(row.fee), due: 0 })),
+        hostel: (termRows.hostel || []).map((row) => ({ ...row, paid: round2(row.fee), due: 0 })),
+      }
+    : termRows;
 
   return {
     tuitionFee: t,
@@ -66,11 +77,12 @@ export function buildFinance({
     messDue: round2(Math.max(m - messPaid, 0)),
 
     // Per-term breakdown for the fixed heads (empty array when not provided).
-    terms: terms || { tuition: [], hostel: [] },
+    terms: finalTerms,
 
     paymentCount,
     messBillCount,
-    status: feeStatus(totalFee, totalPaid),
+    loan,
+    status: loan && totalFee > 0 ? 'paid' : feeStatus(totalFee, totalPaid),
   };
 }
 
@@ -186,5 +198,6 @@ export async function financeForStudent(student) {
     paymentCount,
     messBillCount: messRows[0]?.count || 0,
     terms,
+    loan: Boolean(student && typeof student === 'object' && student.loan === true),
   });
 }

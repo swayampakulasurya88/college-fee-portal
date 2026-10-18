@@ -37,6 +37,7 @@ export default function ManageFeesModal({ open, onClose, studentId, onChanged })
   const [messBusy, setMessBusy] = useState(false);
   const [termEdit, setTermEdit] = useState(null); // { head, term, amount, note }
   const [termBusy, setTermBusy] = useState(false);
+  const [loanBusy, setLoanBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!studentId) return;
@@ -158,6 +159,21 @@ export default function ManageFeesModal({ open, onClose, studentId, onChanged })
       ]
     : [];
 
+  const toggleLoan = async () => {
+    if (!s) return;
+    setLoanBusy(true);
+    try {
+      await api(`/students/${s.id}`, { method: 'PATCH', body: { loan: !s.loan } });
+      toast.success(s.loan ? 'Loan removed — dues recalculated.' : 'Marked as loan — fee cleared to ₹0.');
+      await load();
+      onChanged?.();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoanBusy(false);
+    }
+  };
+
   return (
     <>
       <Modal
@@ -185,10 +201,19 @@ export default function ManageFeesModal({ open, onClose, studentId, onChanged })
                 {s.branch && <span className="chip">{s.branch}</span>}
                 {s.year && <span className="chip">Year {s.year}</span>}
                 {s.section && <span className="chip">Sec {s.section}</span>}
+                {s.loan && <span className="chip chip-emerald">Loan</span>}
               </div>
               <div className="inline">
                 <button className="btn btn-ghost btn-sm" onClick={() => setEditStudent(true)}>
                   ✎ Edit details
+                </button>
+                <button
+                  className={s.loan ? 'btn btn-loan btn-sm' : 'btn btn-ghost btn-sm'}
+                  disabled={loanBusy}
+                  title={s.loan ? 'Remove loan — recalculate dues' : 'Mark as loan — clears the fee to ₹0'}
+                  onClick={toggleLoan}
+                >
+                  {loanBusy ? '…' : s.loan ? 'Loan ✓' : 'Loan'}
                 </button>
                 <button className="btn btn-primary btn-sm" onClick={() => setPayModal({ open: true, payment: null })}>
                   + Add payment
@@ -202,6 +227,22 @@ export default function ManageFeesModal({ open, onClose, studentId, onChanged })
                 {s.parentPhone && <span>{s.phone ? ' · ' : ''}👪 {s.parentPhone} (parent)</span>}
                 {s.email && <span>{s.phone || s.parentPhone ? ' · ' : ''}✉ {s.email}</span>}
                 {s.address && <div style={{ marginTop: 2 }}>📍 {s.address}</div>}
+              </div>
+            )}
+
+            {s.loan && (
+              <div
+                className="small"
+                style={{
+                  marginBottom: '0.75rem',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: 8,
+                  background: 'var(--emerald-soft)',
+                  color: '#065f46',
+                  fontWeight: 600,
+                }}
+              >
+                🎓 Education loan — fees shown as fully settled (₹0 due).{s.loanNote ? ` ${s.loanNote}` : ''}
               </div>
             )}
 

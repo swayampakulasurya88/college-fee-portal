@@ -187,6 +187,11 @@ export default function StudentDashboard() {
               {quotaShort[s.quota] || s.quota} quota
             </span>
           )}
+          {s.loan && (
+            <span className="chip chip-emerald" style={{ marginTop: 4, marginLeft: 6 }}>
+              🎓 Education loan
+            </span>
+          )}
           {s.address && (
             <p className="muted small" style={{ marginTop: 6 }}>📍 {s.address}</p>
           )}
@@ -204,9 +209,11 @@ export default function StudentDashboard() {
           <p style={{ opacity: 0.9, marginTop: 4 }}>
             {s.totalFee <= 0
               ? 'Your fee structure has not been published yet. Please check back soon.'
-              : cleared
-                ? 'Thank you — you have no pending dues.'
-                : `You have paid ${inr(s.totalPaid)} of ${inr(s.totalFee)}.`}
+              : s.loan
+                ? 'Your fees are covered by an education loan — nothing is due.'
+                : cleared
+                  ? 'Thank you — you have no pending dues.'
+                  : `You have paid ${inr(s.totalPaid)} of ${inr(s.totalFee)}.`}
           </p>
         </div>
         <div className="amount">
@@ -290,7 +297,24 @@ export default function StudentDashboard() {
       </SectionCard>
 
       <div className="two-col" style={{ marginTop: '1.25rem' }}>
-        <SectionCard title="Pay your fee" subtitle="Paid online? Record it here with your transaction ID">
+        <SectionCard
+          title={s.loan ? 'Fees covered by loan' : 'Pay your fee'}
+          subtitle={s.loan ? 'This account is settled by an education loan' : 'Paid online? Record it here with your transaction ID'}
+        >
+          {s.loan ? (
+            <div
+              style={{
+                padding: '1rem',
+                borderRadius: 10,
+                background: 'var(--emerald-soft)',
+                color: '#065f46',
+                fontWeight: 600,
+              }}
+            >
+              🎓 Your fees are covered by an education loan, so there is nothing to pay here. Please contact the
+              office if this looks incorrect.
+            </div>
+          ) : (
           <form onSubmit={submitPayment}>
             <Field label="Which fee are you paying?" required>
               <Select value={pay.category} onChange={(e) => chooseCategory(e.target.value)}>
@@ -353,6 +377,7 @@ export default function StudentDashboard() {
               {paying ? 'Recording…' : 'I have paid — record it'}
             </button>
           </form>
+          )}
         </SectionCard>
 
         <SectionCard title="Message the office" subtitle="Raise a fee query or send an update">

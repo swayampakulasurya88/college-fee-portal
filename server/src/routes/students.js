@@ -14,14 +14,16 @@ const router = Router();
 router.use(authRequired);
 
 function normalize(doc) {
+  const loan = doc.loan === true;
   const tuitionFee = Number(doc.tuitionFee || 0);
   const hostelFee = Number(doc.hostelFee || 0);
   const messFee = Number(doc.messFee || 0);
   const totalFee = round2(doc.totalFee ?? tuitionFee + hostelFee + messFee);
-  const totalPaid = round2(doc.totalPaid || 0);
-  const tuitionPaid = round2(doc.tuitionPaid || 0);
-  const hostelPaid = round2(doc.hostelPaid || 0);
-  const messPaid = round2(doc.messPaid || 0);
+  // Loan students are shown as fully settled: paid mirrors the fees, due is 0.
+  const totalPaid = loan ? totalFee : round2(doc.totalPaid || 0);
+  const tuitionPaid = loan ? tuitionFee : round2(doc.tuitionPaid || 0);
+  const hostelPaid = loan ? hostelFee : round2(doc.hostelPaid || 0);
+  const messPaid = loan ? messFee : round2(doc.messPaid || 0);
   return {
     id: String(doc._id),
     rollNumber: doc.rollNumber,
@@ -34,6 +36,8 @@ function normalize(doc) {
     phone: doc.phone || '',
     parentPhone: doc.parentPhone || '',
     address: doc.address || '',
+    loan,
+    loanNote: doc.loanNote || '',
     quota: (doc.quota || 'ACAT').toUpperCase(),
     active: doc.active !== false,
     tuitionFee,
@@ -41,16 +45,16 @@ function normalize(doc) {
     messFee,
     totalFee,
     totalPaid,
-    totalDue: round2(doc.totalDue ?? totalFee - totalPaid),
+    totalDue: round2(totalFee - totalPaid),
     tuitionPaid,
     hostelPaid,
     messPaid,
-    tuitionDue: round2(doc.tuitionDue ?? Math.max(tuitionFee - tuitionPaid, 0)),
-    hostelDue: round2(doc.hostelDue ?? Math.max(hostelFee - hostelPaid, 0)),
-    messDue: round2(doc.messDue ?? Math.max(messFee - messPaid, 0)),
+    tuitionDue: round2(Math.max(tuitionFee - tuitionPaid, 0)),
+    hostelDue: round2(Math.max(hostelFee - hostelPaid, 0)),
+    messDue: round2(Math.max(messFee - messPaid, 0)),
     paymentCount: doc.paymentCount || 0,
     messBillCount: doc.messBillCount || 0,
-    status: feeStatus(totalFee, totalPaid),
+    status: loan && totalFee > 0 ? 'paid' : feeStatus(totalFee, totalPaid),
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -101,6 +105,8 @@ function pickStudentFields(body, { requireCore = false } = {}) {
   setIf('phone', (v) => String(v).trim());
   setIf('parentPhone', (v) => String(v).trim());
   setIf('address', (v) => String(v).trim());
+  setIf('loanNote', (v) => String(v).trim());
+  setIf('loan', (v) => v === true || v === 'true' || v === 1 || v === '1');
   setIf('quota', (v) => String(v).trim().toUpperCase());
   setIf('active', (v) => Boolean(v));
 
@@ -157,6 +163,9 @@ router.get(
       match.$or = [{ rollNumber: rx }, { name: rx }, { college: rx }, { branch: rx }, { phone: rx }, { address: rx }];
     }
     if (QUOTAS.includes(quota)) match.quota = quota;
+    const loanParam = String(req.query.loan || '').trim();
+    if (loanParam === 'true') match.loan = true;
+    else if (loanParam === 'false') match.loan = { $ne: true };
 
     const pipeline = [
       { $match: match },
@@ -180,6 +189,21 @@ router.get(
           totalFee: {
             $add: [{ $ifNull: ['$tuitionFee', 0] }, { $ifNull: ['$hostelFee', 0] }, '$messFee'],
           },
+        },
+      },
+      {
+        $addFields: {
+          isLoan: { $eq: [{ $ifNull: ['$loan', false] }, true] },
+        },
+      },
+      {
+        // Loan students: the loan settles every head, so paid mirrors the fees
+        // and the account shows a 0 balance below.
+        $addFields: {
+          totalPaid: { $cond: ['$isLoan', '$totalFee', '$totalPaid'] },
+          tuitionPaid: { $cond: ['$isLoan', '$tuitionFee', '$tuitionPaid'] },
+          hostelPaid: { $cond: ['$isLoan', '$hostelFee', '$hostelPaid'] },
+          messPaid: { $cond: ['$isLoan', '$messFee', '$messPaid'] },
         },
       },
       {

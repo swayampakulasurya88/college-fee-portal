@@ -23,6 +23,11 @@ const studentSchema = new mongoose.Schema(
     parentPhone: { type: String, trim: true, default: '' },
     // Residential address (imported from the student directory, editable by admin).
     address: { type: String, trim: true, default: '' },
+    // Education-loan students: the loan covers their fee, so the account shows a
+    // ₹0 balance (everything marked paid) everywhere in the portal.
+    loan: { type: Boolean, default: false },
+    // Optional note about the loan (bank, sanction number, etc.).
+    loanNote: { type: String, trim: true, default: '' },
     // Admission quota — drives the per-term tuition rate.
     //   ACAT = came through rank/counselling, BCAT = management quota, SPOT = spot admission.
     quota: {
