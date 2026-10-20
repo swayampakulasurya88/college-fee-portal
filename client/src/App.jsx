@@ -6,6 +6,9 @@ import Layout from './components/Layout.jsx';
 import { Spinner } from './components/ui.jsx';
 import Login from './pages/Login.jsx';
 import StudentDashboard from './pages/student/StudentDashboard.jsx';
+import StudentDetails from './pages/student/StudentDetails.jsx';
+import StudentFees from './pages/student/StudentFees.jsx';
+import StudentPayments from './pages/student/StudentPayments.jsx';
 import AdminOverview from './pages/admin/AdminOverview.jsx';
 import AdminStudents from './pages/admin/AdminStudents.jsx';
 import AdminStpo from './pages/admin/AdminStpo.jsx';
@@ -34,7 +37,15 @@ function RequireRole({ role }) {
 
 function StudentLayout() {
   return (
-    <Layout roleLabel="Student Portal" nav={[{ to: '/student', end: true, icon: '📊', label: 'My Fee Report' }]}>
+    <Layout
+      roleLabel="Student Portal"
+      nav={[
+        { to: '/student', end: true, icon: '📊', label: 'Dashboard' },
+        { to: '/student/details', icon: '👤', label: 'My Details' },
+        { to: '/student/fees', icon: '🧾', label: 'Fee Details' },
+        { to: '/student/payments', icon: '💰', label: 'Fee Payments' },
+      ]}
+    >
       <Outlet />
     </Layout>
   );
@@ -95,6 +106,9 @@ export default function App() {
       <Route element={<RequireRole role="student" />}>
         <Route element={<StudentLayout />}>
           <Route path="/student" element={<StudentDashboard />} />
+          <Route path="/student/details" element={<StudentDetails />} />
+          <Route path="/student/fees" element={<StudentFees />} />
+          <Route path="/student/payments" element={<StudentPayments />} />
         </Route>
       </Route>
 

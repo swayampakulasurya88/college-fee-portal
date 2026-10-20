@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
 import {
   categoryLabel,
@@ -24,6 +24,7 @@ import {
 } from './ui.jsx';
 import PaymentFormModal from './PaymentFormModal.jsx';
 import StudentFormModal from './StudentFormModal.jsx';
+import StudentAvatar, { readPhotoFile } from './StudentAvatar.jsx';
 
 function Cell({ label, value }) {
   return (
@@ -33,6 +34,85 @@ function Cell({ label, value }) {
         {value || <span className="muted">—</span>}
       </div>
     </div>
+  );
+}
+
+// Every detail the student has filled in, plus their photo (admins can set or
+// clear the photo too — handy for bulk enrolment sessions).
+function StudentIdentity({ student, onPhoto, busy }) {
+  const fileRef = useRef(null);
+
+  return (
+    <>
+      <div className="divider" />
+      <div className="space-between" style={{ marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <h4 style={{ margin: 0 }}>Student details</h4>
+        <span className="muted small">Filled by the student from their own login · ✎ Edit details to change</span>
+      </div>
+
+      <div className="inline" style={{ gap: '1rem', alignItems: 'center', marginBottom: '0.9rem', flexWrap: 'wrap' }}>
+        <StudentAvatar student={student} size={84} />
+        <div>
+          <div className="inline">
+            <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => fileRef.current?.click()}>
+              {busy ? 'Saving…' : student.photo ? '📷 Replace photo' : '📷 Upload photo'}
+            </button>
+            {student.photo && (
+              <button className="btn btn-danger btn-sm" disabled={busy} onClick={() => onPhoto('')}>
+                Remove
+              </button>
+            )}
+          </div>
+          <p className="muted small" style={{ marginTop: 6 }}>
+            {student.photo ? 'Student photo on file.' : 'No student photo yet.'}
+          </p>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (!file) return;
+            try {
+              const photo = await readPhotoFile(file);
+              await onPhoto(photo);
+            } catch (err) {
+              onPhoto(null, err.message);
+            }
+          }}
+        />
+      </div>
+
+      <div className="grid-3">
+        <Cell label="Date of birth" value={student.dob} />
+        <Cell label="Gender" value={student.gender} />
+        <Cell label="Blood group" value={student.bloodGroup} />
+        <Cell label="Father's name" value={student.fatherName} />
+        <Cell label="Mother's name" value={student.motherName} />
+        <Cell label="Staying" value={student.hostel ? 'Hosteller' : 'Day scholar'} />
+        <Cell label="Student phone" value={student.phone} />
+        <Cell label="Alternate phone" value={student.alternatePhone} />
+        <Cell label="Parent phone" value={student.parentPhone} />
+        <Cell label="Email" value={student.email} />
+        <Cell label="Village / street" value={student.village} />
+        <Cell label="Mandal" value={student.mandal} />
+        <Cell label="District" value={student.district} />
+        <Cell label="State" value={student.state} />
+        <Cell label="PIN code" value={student.pincode} />
+        <Cell label="Full address" value={student.address} />
+        <Cell
+          label="Emergency contact"
+          value={[student.emergencyContactName, student.emergencyContactPhone].filter(Boolean).join(' · ')}
+        />
+        <Cell label="Quota" value={student.quota} />
+        <Cell label="College / Branch" value={[student.college, student.branch].filter(Boolean).join(' · ')} />
+        <Cell label="Year / Section" value={[student.year && `Year ${student.year}`, student.section && `Sec ${student.section}`].filter(Boolean).join(' · ')} />
+        <Cell label="Loan" value={student.loan ? `Yes${student.loanNote ? ` · ${student.loanNote}` : ''}` : 'No'} />
+      </div>
+    </>
   );
 }
 
@@ -49,6 +129,7 @@ export default function ManageFeesModal({ open, onClose, studentId, onChanged })
   const [termEdit, setTermEdit] = useState(null); // { head, term, amount, note }
   const [termBusy, setTermBusy] = useState(false);
   const [loanBusy, setLoanBusy] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!studentId) return;
@@ -171,7 +252,6 @@ export default function ManageFeesModal({ open, onClose, studentId, onChanged })
     : [];
 
   const toggleLoan = async () => {
-    if (!s) return;
     setLoanBusy(true);
     try {
       await api(`/students/${s.id}`, { method: 'PATCH', body: { loan: !s.loan } });
@@ -182,6 +262,25 @@ export default function ManageFeesModal({ open, onClose, studentId, onChanged })
       toast.error(err.message);
     } finally {
       setLoanBusy(false);
+    }
+  };
+
+  // Admin can set a student's photo (or clear it) from the details view.
+  const savePhoto = async (photo, errorMessage) => {
+    if (errorMessage) {
+      toast.error(errorMessage);
+      return;
+    }
+    setPhotoBusy(true);
+    try {
+      await api(`/students/${s.id}`, { method: 'PATCH', body: { photo: photo || '' } });
+      toast.success(photo ? 'Student photo updated.' : 'Student photo removed.');
+      await load();
+      onChanged?.();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setPhotoBusy(false);
     }
   };
 
@@ -257,31 +356,7 @@ export default function ManageFeesModal({ open, onClose, studentId, onChanged })
               </div>
             )}
 
-            <div className="divider" />
-            <div className="space-between" style={{ marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <h4 style={{ margin: 0 }}>Student details</h4>
-              <span className="muted small">Filled by the student from their own login · ✎ Edit details to change</span>
-            </div>
-            <div className="grid-3">
-              <Cell label="Date of birth" value={s.dob} />
-              <Cell label="Gender" value={s.gender} />
-              <Cell label="Blood group" value={s.bloodGroup} />
-              <Cell label="Father's name" value={s.fatherName} />
-              <Cell label="Mother's name" value={s.motherName} />
-              <Cell label="Staying" value={s.hostel ? 'Hosteller' : 'Day scholar'} />
-              <Cell label="Alternate phone" value={s.alternatePhone} />
-              <Cell label="Email" value={s.email} />
-              <Cell label="Village / street" value={s.village} />
-              <Cell label="Mandal" value={s.mandal} />
-              <Cell label="District" value={s.district} />
-              <Cell label="State" value={s.state} />
-              <Cell label="PIN code" value={s.pincode} />
-              <Cell label="Address" value={s.address} />
-              <Cell
-                label="Emergency contact"
-                value={[s.emergencyContactName, s.emergencyContactPhone].filter(Boolean).join(' · ')}
-              />
-            </div>
+            <StudentIdentity student={s} busy={photoBusy} onPhoto={savePhoto} />
 
             <div className="grid-3" style={{ marginBottom: '0.5rem' }}>
               <div>

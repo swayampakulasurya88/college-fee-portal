@@ -34,6 +34,7 @@ export function studentPayload(student, finance = {}) {
     hostel: raw.hostel === true,
     emergencyContactName: raw.emergencyContactName || '',
     emergencyContactPhone: raw.emergencyContactPhone || '',
+    photo: raw.photo || '',
     loan: raw.loan === true,
     loanNote: raw.loanNote || '',
     quota: (raw.quota || 'ACAT').toUpperCase(),

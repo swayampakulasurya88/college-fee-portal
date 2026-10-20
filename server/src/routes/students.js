@@ -18,6 +18,20 @@ const PHONE_RE = /^[0-9+\-\s()]{6,20}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GENDERS = ['', 'Male', 'Female', 'Other'];
 const BLOOD_GROUPS = ['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+// Profile pictures are stored as data URLs. The client downscales to 256×256
+// JPEG before uploading, so this cap (~300 KB decoded) is only a safety net.
+const PHOTO_RE = /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
+const PHOTO_MAX_CHARS = 400_000;
+
+function normalizePhoto(value) {
+  const photo = String(value ?? '').trim();
+  if (!photo) return '';
+  if (photo.length > PHOTO_MAX_CHARS) {
+    throw new HttpError(400, 'Photo is too large — please choose an image smaller than 300 KB');
+  }
+  if (!PHOTO_RE.test(photo)) throw new HttpError(400, 'Photo must be a JPEG, PNG or WebP image');
+  return photo;
+}
 
 function normalize(doc) {
   const loan = doc.loan === true;
@@ -56,6 +70,7 @@ function normalize(doc) {
     hostel: doc.hostel === true,
     emergencyContactName: doc.emergencyContactName || '',
     emergencyContactPhone: doc.emergencyContactPhone || '',
+    photo: doc.photo || '',
     loan,
     loanNote: doc.loanNote || '',
     quota: (doc.quota || 'ACAT').toUpperCase(),
@@ -140,6 +155,7 @@ function pickStudentFields(body, { requireCore = false } = {}) {
   setIf('emergencyContactName', (v) => String(v).trim());
   setIf('emergencyContactPhone', (v) => String(v).trim());
   setIf('loanNote', (v) => String(v).trim());
+  setIf('photo', normalizePhoto);
   setIf('loan', (v) => v === true || v === 'true' || v === 1 || v === '1');
   setIf('quota', (v) => String(v).trim().toUpperCase());
   setIf('active', (v) => Boolean(v));
@@ -246,6 +262,40 @@ router.patch(
 
     const finance = await financeForStudent(student);
     res.json({ student: studentPayload(student, finance) });
+  }),
+);
+
+// Profile photo: the client downscales to 256×256 and sends a data URL.
+router.post(
+  '/me/photo',
+  studentOnly,
+  asyncHandler(async (req, res) => {
+    const student = await Student.findById(req.user.sub);
+    if (!student) throw new HttpError(404, 'Student not found');
+
+    const photo = normalizePhoto(req.body?.photo);
+    if (!photo) throw new HttpError(400, 'Choose an image to upload');
+
+    student.photo = photo;
+    await student.save();
+
+    const finance = await financeForStudent(student);
+    res.json({ student: studentPayload(student, finance), message: 'Profile photo updated' });
+  }),
+);
+
+router.delete(
+  '/me/photo',
+  studentOnly,
+  asyncHandler(async (req, res) => {
+    const student = await Student.findById(req.user.sub);
+    if (!student) throw new HttpError(404, 'Student not found');
+
+    student.photo = '';
+    await student.save();
+
+    const finance = await financeForStudent(student);
+    res.json({ student: studentPayload(student, finance), message: 'Profile photo removed' });
   }),
 );
 

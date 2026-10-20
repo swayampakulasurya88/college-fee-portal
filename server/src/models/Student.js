@@ -42,6 +42,9 @@ const studentSchema = new mongoose.Schema(
     // Education-loan students: the loan covers their fee, so the account shows a
     // ₹0 balance (everything marked paid) everywhere in the portal.
     loan: { type: Boolean, default: false },
+    // Profile picture as a small (256px) JPEG/PNG/WebP data URL chosen by the
+    // student from their own login; admins can change or clear it too.
+    photo: { type: String, trim: true, default: '' },
     // Optional note about the loan (bank, sanction number, etc.).
     loanNote: { type: String, trim: true, default: '' },
     // Admission quota — drives the per-term tuition rate.

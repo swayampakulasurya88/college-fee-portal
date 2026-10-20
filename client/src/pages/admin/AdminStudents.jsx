@@ -13,6 +13,7 @@ import {
 import StudentFormModal from '../../components/StudentFormModal.jsx';
 import BulkImportModal from '../../components/BulkImportModal.jsx';
 import ManageFeesModal from '../../components/ManageFeesModal.jsx';
+import StudentAvatar from '../../components/StudentAvatar.jsx';
 import { exportToExcel, exportToPdf } from '../../export.js';
 
 const LIMIT = 20;
@@ -271,25 +272,28 @@ export default function AdminStudents() {
                     <tr key={s.id}>
                       <td style={{ fontWeight: 700 }}>{s.rollNumber}</td>
                       <td>
-                        <div>
-                          {s.name}
-                          {s.loan && (
-                            <span className="chip chip-emerald" style={{ marginLeft: 6 }}>
-                              Loan
-                            </span>
-                          )}
-                        </div>
-                        {s.phone && <div className="muted small">{s.phone}</div>}
-                        {s.parentPhone && <div className="muted small">Parent {s.parentPhone}</div>}
-                        {s.address && (
-                          <div
-                            className="muted small"
-                            title={s.address}
-                            style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                          >
-                            {s.address}
+                        <div className="inline" style={{ gap: '0.6rem', alignItems: 'center' }}>
+                          <StudentAvatar student={s} size={38} />
+                          <div style={{ minWidth: 0 }}>
+                            {s.name}
+                            {s.loan && (
+                              <span className="chip chip-emerald" style={{ marginLeft: 6 }}>
+                                Loan
+                              </span>
+                            )}
+                            {s.phone && <div className="muted small">{s.phone}</div>}
+                            {s.parentPhone && <div className="muted small">Parent {s.parentPhone}</div>}
+                            {s.address && (
+                              <div
+                                className="muted small"
+                                title={s.address}
+                                style={{ maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                              >
+                                {s.address}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </td>
                       <td>
                         {s.college && <div style={{ fontWeight: 600 }}>{s.college}</div>}
@@ -313,6 +317,13 @@ export default function AdminStudents() {
                         <div className="row-actions">
                           <button className="btn btn-primary btn-sm" onClick={() => setManageId(s.id)}>
                             Fees
+                          </button>
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            title="Fees, personal details and student photo"
+                            onClick={() => setManageId(s.id)}
+                          >
+                            Details
                           </button>
                           <button className="btn btn-ghost btn-sm" onClick={() => setEditStudent(s)}>
                             Edit
