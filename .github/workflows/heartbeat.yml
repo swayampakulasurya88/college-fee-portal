@@ -1,0 +1,42 @@
+name: Keep scheduled workflows enabled
+
+# GitHub automatically disables scheduled workflows in public repositories after
+# ~60 days without repository activity (commits / issues / pull requests).
+# A workflow merely *running* does not count as activity.
+#
+# That would silently stop the daily database backup. This job makes a tiny
+# timestamp commit to the default branch once a month so the repository always
+# counts as active.
+#
+# The commit message includes [skip render], so Render does NOT redeploy.
+
+on:
+  schedule:
+    # 20:00 UTC on the 1st of every month (~01:30 IST on the 2nd)
+    - cron: '0 20 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: heartbeat
+  cancel-in-progress: false
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Commit a heartbeat
+        run: |
+          set -euo pipefail
+          git config user.name "kiet-fee-portal-bot"
+          git config user.email "actions@users.noreply.github.com"
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > .github/last-activity
+          git add .github/last-activity
+          git commit -m "chore: monthly heartbeat to keep scheduled workflows enabled [skip render]"
+          git push origin HEAD:main

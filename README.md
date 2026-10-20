@@ -251,3 +251,21 @@ A student is **Paid** when due ≤ 0, **Unpaid** with no payments, otherwise **P
 
 For production you would: switch `MONGODB_URI` to a managed MongoDB, set a strong
 `JWT_SECRET`, change the admin password, and build the client (`npm --prefix client run build`).
+
+---
+
+## 🛠️ Operations & durability
+
+The live site runs on Render's free tier with MongoDB Atlas. Two things keep it
+available long-term and are fully documented:
+
+- **Daily encrypted database backup** — `.github/workflows/backup.yml` dumps Atlas,
+  encrypts it (AES-256) and stores it as a 90-day artifact. Setup and restore
+  steps: [docs/BACKUP-RESTORE.md](docs/BACKUP-RESTORE.md).
+- **Keep-alive** — Render sleeps after ~15 minutes idle, so an external 5-minute
+  monitor (UptimeRobot / cron-job.org) keeps it warm and alerts on downtime.
+  Setup: [docs/KEEPALIVE.md](docs/KEEPALIVE.md).
+
+`.github/workflows/heartbeat.yml` makes a harmless monthly commit on the default
+branch (marked `[skip render]`, so it does not redeploy) to keep GitHub from
+disabling the scheduled workflows for inactivity.

@@ -1,0 +1,81 @@
+name: Daily database backup
+
+# Dumps the MongoDB Atlas database every day, encrypts it with a passphrase,
+# and stores it as a GitHub Actions artifact (90-day rolling window).
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   MONGODB_URI        - the MongoDB Atlas connection string
+#   BACKUP_PASSPHRASE  - a long random passphrase (keep it in a password manager!)
+#
+# Without the passphrase an encrypted backup cannot be restored. See
+# docs/BACKUP-RESTORE.md for the full runbook.
+
+on:
+  schedule:
+    # 02:00 UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Install MongoDB Database Tools
+        run: |
+          set -euo pipefail
+          VERSION=100.12.2
+          UBUNTU=$(. /etc/os-release && echo "${VERSION_ID//./}")
+          URL="https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu${UBUNTU}-x86_64-${VERSION}.tgz"
+          if ! curl -fsSL "$URL" -o tools.tgz; then
+            echo "No build for ubuntu${UBUNTU}; falling back to ubuntu2204"
+            URL="https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-${VERSION}.tgz"
+            curl -fsSL "$URL" -o tools.tgz
+          fi
+          tar -xzf tools.tgz
+          sudo cp mongodb-database-tools-*/bin/* /usr/local/bin/
+          mongodump --version | head -1
+
+      - name: Dump and encrypt
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MONGODB_URI:-}" ]; then
+            echo "::error::Missing MONGODB_URI secret. See docs/BACKUP-RESTORE.md."
+            exit 1
+          fi
+          if [ -z "${BACKUP_PASSPHRASE:-}" ]; then
+            echo "::error::Missing BACKUP_PASSPHRASE secret. See docs/BACKUP-RESTORE.md."
+            exit 1
+          fi
+
+          STAMP=$(date -u +%Y-%m-%d_%H%M)
+          mkdir -p backup
+          ARCHIVE="backup/college_fee-$STAMP.archive"
+
+          echo "Dumping database..."
+          mongodump --uri="$MONGODB_URI" --archive="$ARCHIVE" --gzip
+
+          echo "Encrypting (AES-256)..."
+          # Pass the passphrase on stdin so it never appears in the process list.
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --symmetric \
+            --cipher-algo AES256 --passphrase-fd 0 \
+            --output "$ARCHIVE.gpg" "$ARCHIVE"
+
+          rm -f "$ARCHIVE"
+          test -s "$ARCHIVE.gpg"
+          echo "Encrypted backup size: $(du -h "$ARCHIVE.gpg" | cut -f1)"
+
+      - name: Upload encrypted backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backup/*.gpg
+          retention-days: 90
+          if-no-files-found: error
