@@ -3,6 +3,7 @@ import { Message } from '../models/Message.js';
 import { Student } from '../models/Student.js';
 import { messagePayload } from '../utils/serialize.js';
 import { asyncHandler, HttpError } from '../utils/asyncHandler.js';
+import { archiveDeleted } from '../utils/trash.js';
 import { escapeRegex } from '../utils/query.js';
 import { authRequired, adminOnly, studentOnly } from '../middleware/auth.js';
 
@@ -144,9 +145,24 @@ router.delete(
   '/:id',
   adminOnly,
   asyncHandler(async (req, res) => {
-    const message = await Message.findByIdAndDelete(req.params.id);
+    const message = await Message.findById(req.params.id);
     if (!message) throw new HttpError(404, 'Message not found');
-    res.json({ message: 'Message deleted' });
+
+    const student = await Student.findById(message.student);
+    await archiveDeleted({
+      entity: 'message',
+      label: student ? `${student.name} (${student.rollNumber})` : 'Message',
+      studentRoll: student?.rollNumber || '',
+      studentName: student?.name || '',
+      reference: message.subject || '',
+      summary: message.subject || 'Message',
+      counts: { messages: 1 },
+      items: [{ collection: Message.collection.name, doc: message.toObject() }],
+      deletedBy: req.user?.username || 'admin',
+    });
+
+    await message.deleteOne();
+    res.json({ message: 'Message deleted — recoverable from the Deleted page' });
   }),
 );
 

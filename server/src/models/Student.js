@@ -23,6 +23,22 @@ const studentSchema = new mongoose.Schema(
     parentPhone: { type: String, trim: true, default: '' },
     // Residential address (imported from the student directory, editable by admin).
     address: { type: String, trim: true, default: '' },
+    // ---- Personal details students fill in themselves ----
+    dob: { type: String, trim: true, default: '' }, // YYYY-MM-DD
+    gender: { type: String, trim: true, default: '' },
+    bloodGroup: { type: String, trim: true, default: '' },
+    fatherName: { type: String, trim: true, default: '' },
+    motherName: { type: String, trim: true, default: '' },
+    alternatePhone: { type: String, trim: true, default: '' },
+    village: { type: String, trim: true, default: '' },
+    mandal: { type: String, trim: true, default: '' },
+    district: { type: String, trim: true, default: '' },
+    state: { type: String, trim: true, default: '' },
+    pincode: { type: String, trim: true, default: '' },
+    // true = hosteller, false = day scholar.
+    hostel: { type: Boolean, default: false },
+    emergencyContactName: { type: String, trim: true, default: '' },
+    emergencyContactPhone: { type: String, trim: true, default: '' },
     // Education-loan students: the loan covers their fee, so the account shows a
     // ₹0 balance (everything marked paid) everywhere in the portal.
     loan: { type: Boolean, default: false },

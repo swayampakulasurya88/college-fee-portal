@@ -5,6 +5,7 @@ import { Student } from '../models/Student.js';
 import { messBillPayload } from '../utils/serialize.js';
 import { round2 } from '../utils/finance.js';
 import { asyncHandler, HttpError } from '../utils/asyncHandler.js';
+import { archiveDeleted } from '../utils/trash.js';
 import { escapeRegex } from '../utils/query.js';
 import { authRequired, adminOnly, studentOnly } from '../middleware/auth.js';
 
@@ -193,8 +194,22 @@ router.delete(
   asyncHandler(async (req, res) => {
     const bill = await MessBill.findById(req.params.id);
     if (!bill) throw new HttpError(404, 'Mess bill not found');
+
+    const student = await Student.findById(bill.student);
+    await archiveDeleted({
+      entity: 'messBill',
+      label: student ? `${student.name} (${student.rollNumber})` : 'Mess bill',
+      studentRoll: student?.rollNumber || '',
+      studentName: student?.name || '',
+      reference: bill.month || '',
+      summary: `Mess bill ${bill.month || ''} — ₹${Number(bill.amount || 0)}`,
+      counts: { messBills: 1 },
+      items: [{ collection: MessBill.collection.name, doc: bill.toObject() }],
+      deletedBy: req.user?.username || 'admin',
+    });
+
     await bill.deleteOne();
-    res.json({ message: 'Mess bill deleted' });
+    res.json({ message: 'Mess bill deleted — recoverable from the Deleted page' });
   }),
 );
 

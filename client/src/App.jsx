@@ -16,6 +16,8 @@ import AdminMessages from './pages/admin/AdminMessages.jsx';
 import AdminReports from './pages/admin/AdminReports.jsx';
 import AdminDuplicates from './pages/admin/AdminDuplicates.jsx';
 import AdminCalendar from './pages/admin/AdminCalendar.jsx';
+import AdminTrash from './pages/admin/AdminTrash.jsx';
+import AdminBackups from './pages/admin/AdminBackups.jsx';
 
 function RequireRole({ role }) {
   const { ready, role: current } = useAuth();
@@ -42,6 +44,7 @@ function AdminLayout() {
   const location = useLocation();
   const [unread, setUnread] = useState(0);
   const [duplicates, setDuplicates] = useState(0);
+  const [deleted, setDeleted] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -50,6 +53,9 @@ function AdminLayout() {
       .catch(() => {});
     api('/duplicates?limit=1')
       .then((d) => active && setDuplicates(d.total || 0))
+      .catch(() => {});
+    api('/trash?limit=1')
+      .then((d) => active && setDeleted(d.total || 0))
       .catch(() => {});
     return () => {
       active = false;
@@ -67,6 +73,8 @@ function AdminLayout() {
     { to: '/admin/reports', icon: '📅', label: 'Daily Reports' },
     { to: '/admin/calendar', icon: '📆', label: 'Payment Calendar' },
     { to: '/admin/duplicates', icon: '⚠️', label: 'Duplicates', badge: duplicates },
+    { to: '/admin/deleted', icon: '🗑️', label: 'Deleted', badge: deleted },
+    { to: '/admin/backups', icon: '💾', label: 'Backups' },
   ];
 
   return (
@@ -102,6 +110,8 @@ export default function App() {
           <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/admin/calendar" element={<AdminCalendar />} />
           <Route path="/admin/duplicates" element={<AdminDuplicates />} />
+          <Route path="/admin/deleted" element={<AdminTrash />} />
+          <Route path="/admin/backups" element={<AdminBackups />} />
         </Route>
       </Route>
 

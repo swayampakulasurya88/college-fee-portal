@@ -39,9 +39,20 @@ a transaction ID and term) and message the admin.
   student's **due recalculates instantly** and drops the matching term.
 - **Messages inbox:** read student queries, reply, mark seen/resolved, delete.
 - **Daily report:** day-by-day collection for any date range, with a printable view.
+- **Deleted page (recycle bin):** every deletion — student, payment, mess bill, term fee,
+  message — is archived on one page with a **Restore** button (deleting a student takes
+  their payments, term fees, mess bills and messages with them and restores them together).
+  "Delete forever" removes it permanently.
+- **Backups page:** a gzip-compressed JSON snapshot of the whole database **per day**,
+  taken automatically (hourly while awake, plus on admin login) and downloadable from the
+  admin portal, with record counts per collection.
 
 ### Student
 - Log in with **roll number only** (no password).
+- **My details:** fill in your own personal record — DOB, gender, blood group, parents'
+  names, alternate/parent phone, village / mandal / district / state / PIN, hostel or day
+  scholar, and an emergency contact. It appears in the admin portal (student list, search,
+  details modal, Excel/PDF export) and students can edit it any time.
 - See the **grand total**, **total paid**, **total due** and a per-head break-up for
   **tuition, hostel and mess**, plus a **term-by-term break-up** (fee / paid / due per
   term) and the monthly mess bills.
@@ -209,8 +220,9 @@ A student is **Paid** when due ≤ 0, **Unpaid** with no payments, otherwise **P
 | `POST /students/bulk` | admin | Import many students |
 | `GET /students/:id` | admin | Student + term fees + payments + mess bills |
 | `PATCH /students/:id` | admin | Update details / quota |
-| `DELETE /students/:id` | admin | Delete student + term fees + payments + mess bills + messages |
+| `DELETE /students/:id` | admin | Archive student + term fees + payments + mess bills + messages to the Deleted page (restorable) |
 | `GET /students/me` | student | Own profile + finance |
+| `PATCH /students/me` | student | Edit own personal details (DOB, parents, address, blood group, …) |
 | `GET /students/me/payments` | student | Own payments |
 | `GET /payments` | admin | List payments (search, fee head + date range) |
 | `GET /payments/mine` | student | Own payments |
@@ -240,6 +252,12 @@ A student is **Paid** when due ≤ 0, **Unpaid** with no payments, otherwise **P
 | `GET /reports/summary` | admin | College-wide totals + defaulters |
 | `GET /reports/daily` | admin | Day-by-day collection |
 | `GET /reports/student/me` | student | Own fee report |
+| `GET /trash` | admin | Deleted items (search + type filter, paginated) |
+| `POST /trash/:id/restore` | admin | Put a deleted record back (with everything it belonged to) |
+| `DELETE /trash/:id` | admin | Forget a deleted record permanently |
+| `GET /backups` | admin | List daily database snapshots (metadata) |
+| `POST /backups/run` | admin | Take today's snapshot now (`force: true` to redo) |
+| `GET /backups/:date` | admin | Download `kiet-fee-backup-YYYY-MM-DD.json.gz` |
 
 ---
 
@@ -262,6 +280,9 @@ available long-term and are fully documented:
 - **Daily encrypted database backup** — `.github/workflows/backup.yml` dumps Atlas,
   encrypts it (AES-256) and stores it as a 90-day artifact. Setup and restore
   steps: [docs/BACKUP-RESTORE.md](docs/BACKUP-RESTORE.md).
+- **In-portal daily backups** — the same data is snapshotted inside the portal itself
+  (one gzipped JSON file per day) and listed under **Admin → Backups**, so the admin can
+  download any day's copy without touching the command line. Day/time is Asia/Kolkata.
 - **Keep-alive** — Render sleeps after ~15 minutes idle, so an external 5-minute
   monitor (UptimeRobot / cron-job.org) keeps it warm and alerts on downtime.
   Setup: [docs/KEEPALIVE.md](docs/KEEPALIVE.md).

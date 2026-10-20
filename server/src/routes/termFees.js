@@ -5,6 +5,7 @@ import { Student } from '../models/Student.js';
 import { termFeePayload } from '../utils/serialize.js';
 import { HEAD_TERMS, FIXED_HEADS, QUOTAS, round2, syncStudentFees } from '../utils/finance.js';
 import { asyncHandler, HttpError } from '../utils/asyncHandler.js';
+import { archiveDeleted } from '../utils/trash.js';
 import { escapeRegex } from '../utils/query.js';
 import { authRequired, adminOnly, studentOnly } from '../middleware/auth.js';
 
@@ -251,9 +252,23 @@ router.delete(
     const fee = await TermFee.findById(req.params.id);
     if (!fee) throw new HttpError(404, 'Term fee not found');
     const studentId = fee.student;
+
+    const student = await Student.findById(studentId);
+    await archiveDeleted({
+      entity: 'termFee',
+      label: student ? `${student.name} (${student.rollNumber})` : 'Term fee',
+      studentRoll: student?.rollNumber || '',
+      studentName: student?.name || '',
+      reference: `${fee.head} · term ${fee.term}`,
+      summary: `${fee.head} term ${fee.term} — ₹${Number(fee.amount || 0)}`,
+      counts: { termFees: 1 },
+      items: [{ collection: TermFee.collection.name, doc: fee.toObject() }],
+      deletedBy: req.user?.username || 'admin',
+    });
+
     await fee.deleteOne();
     await syncStudentFees(studentId);
-    res.json({ message: 'Term fee deleted' });
+    res.json({ message: 'Term fee deleted — recoverable from the Deleted page' });
   }),
 );
 

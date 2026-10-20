@@ -6,6 +6,7 @@ import { DuplicateAttempt } from '../models/DuplicateAttempt.js';
 import { financeForStudent, round2, CATEGORIES, HEAD_TERMS } from '../utils/finance.js';
 import { paymentPayload, studentPayload } from '../utils/serialize.js';
 import { asyncHandler, HttpError } from '../utils/asyncHandler.js';
+import { archiveDeleted } from '../utils/trash.js';
 import { escapeRegex, parseDate } from '../utils/query.js';
 import { authRequired, adminOnly, studentOnly } from '../middleware/auth.js';
 
@@ -413,11 +414,26 @@ router.delete(
     if (!payment) throw new HttpError(404, 'Payment not found');
 
     const student = await Student.findById(payment.student);
+
+    await archiveDeleted({
+      entity: 'payment',
+      label: student ? `${student.name} (${student.rollNumber})` : 'Fee payment',
+      studentRoll: student?.rollNumber || '',
+      studentName: student?.name || '',
+      reference: payment.receiptNo || payment.transactionId || '',
+      summary: `${payment.category || 'tuition'} payment of ₹${Number(payment.amount || 0)}${
+        payment.term ? ` · term ${payment.term}` : ''
+      }`,
+      counts: { payments: 1 },
+      items: [{ collection: Payment.collection.name, doc: payment.toObject() }],
+      deletedBy: req.user?.username || 'admin',
+    });
+
     await payment.deleteOne();
 
     const finance = await financeForStudent(student);
     res.json({
-      message: 'Payment deleted',
+      message: 'Payment deleted — recoverable from the Deleted page',
       student: student ? studentPayload(student, finance) : null,
     });
   }),

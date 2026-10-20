@@ -25,6 +25,17 @@ import {
 import PaymentFormModal from './PaymentFormModal.jsx';
 import StudentFormModal from './StudentFormModal.jsx';
 
+function Cell({ label, value }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div className="muted small">{label}</div>
+      <div style={{ fontWeight: 600, marginTop: 2, overflowWrap: 'anywhere' }}>
+        {value || <span className="muted">—</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function ManageFeesModal({ open, onClose, studentId, onChanged }) {
   const toast = useToast();
   const [data, setData] = useState(null);
@@ -245,6 +256,32 @@ export default function ManageFeesModal({ open, onClose, studentId, onChanged })
                 🎓 Education loan — fees shown as fully settled (₹0 due).{s.loanNote ? ` ${s.loanNote}` : ''}
               </div>
             )}
+
+            <div className="divider" />
+            <div className="space-between" style={{ marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <h4 style={{ margin: 0 }}>Student details</h4>
+              <span className="muted small">Filled by the student from their own login · ✎ Edit details to change</span>
+            </div>
+            <div className="grid-3">
+              <Cell label="Date of birth" value={s.dob} />
+              <Cell label="Gender" value={s.gender} />
+              <Cell label="Blood group" value={s.bloodGroup} />
+              <Cell label="Father's name" value={s.fatherName} />
+              <Cell label="Mother's name" value={s.motherName} />
+              <Cell label="Staying" value={s.hostel ? 'Hosteller' : 'Day scholar'} />
+              <Cell label="Alternate phone" value={s.alternatePhone} />
+              <Cell label="Email" value={s.email} />
+              <Cell label="Village / street" value={s.village} />
+              <Cell label="Mandal" value={s.mandal} />
+              <Cell label="District" value={s.district} />
+              <Cell label="State" value={s.state} />
+              <Cell label="PIN code" value={s.pincode} />
+              <Cell label="Address" value={s.address} />
+              <Cell
+                label="Emergency contact"
+                value={[s.emergencyContactName, s.emergencyContactPhone].filter(Boolean).join(' · ')}
+              />
+            </div>
 
             <div className="grid-3" style={{ marginBottom: '0.5rem' }}>
               <div>

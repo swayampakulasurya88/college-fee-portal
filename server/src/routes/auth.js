@@ -6,6 +6,7 @@ import { financeForStudent } from '../utils/finance.js';
 import { studentPayload } from '../utils/serialize.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { authRequired } from '../middleware/auth.js';
+import { ensureTodayBackup } from '../utils/backup.js';
 
 const router = Router();
 
@@ -52,6 +53,8 @@ router.post('/admin-login', (req, res) => {
   }
 
   const token = sign({ role: 'admin', sub: 'admin', username });
+  // Side effect: make sure today's data snapshot exists (never blocks login).
+  ensureTodayBackup('admin-login').catch(() => {});
   return res.json({
     token,
     role: 'admin',

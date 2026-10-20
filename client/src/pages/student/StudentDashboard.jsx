@@ -29,6 +29,39 @@ import {
   TextArea,
   useToast,
 } from '../../components/ui.jsx';
+import StudentProfileModal from '../../components/StudentProfileModal.jsx';
+
+// Fields the student is asked to fill themselves.
+const PROFILE_LABELS = {
+  email: 'email',
+  phone: 'phone number',
+  alternatePhone: 'alternate phone',
+  parentPhone: 'parent phone',
+  fatherName: "father's name",
+  motherName: "mother's name",
+  dob: 'date of birth',
+  gender: 'gender',
+  bloodGroup: 'blood group',
+  address: 'address',
+  village: 'village/street',
+  mandal: 'mandal',
+  district: 'district',
+  state: 'state',
+  pincode: 'PIN code',
+  emergencyContactName: 'emergency contact name',
+  emergencyContactPhone: 'emergency contact phone',
+};
+
+function Detail({ label, value }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div className="muted small">{label}</div>
+      <div style={{ fontWeight: 600, marginTop: 2, overflowWrap: 'anywhere' }}>
+        {value || <span className="muted">—</span>}
+      </div>
+    </div>
+  );
+}
 
 const METHODS = [
   ['upi', 'UPI'],
@@ -60,6 +93,7 @@ export default function StudentDashboard() {
   const [sending, setSending] = useState(false);
   const [pay, setPay] = useState(emptyPay);
   const [paying, setPaying] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const load = useCallback(
     async (silent = false) => {
@@ -138,6 +172,9 @@ export default function StudentDashboard() {
   const pct = paidPercent(s.totalPaid, s.totalFee);
   const cleared = s.totalDue <= 0;
   const bannerClass = cleared ? 'clear' : s.totalPaid > 0 ? '' : 'overdue';
+  const profileKeys = Object.keys(PROFILE_LABELS);
+  const missingProfile = profileKeys.filter((k) => !s[k]);
+  const profileFilled = profileKeys.length - missingProfile.length;
 
   const heads = [
     { key: 'tuition', label: 'Tuition Fee', fee: s.tuitionFee, paid: s.tuitionPaid, due: s.tuitionDue },
@@ -227,6 +264,67 @@ export default function StudentDashboard() {
         <StatCard label="Total Due" value={inr(s.totalDue)} tone={cleared ? 'emerald' : 'rose'} icon="⏳" sub={cleared ? 'Nothing pending' : 'To be paid'} />
         <StatCard label="Payment Progress" value={`${pct}%`} tone="amber" icon="📈" sub={`${inr(s.totalPaid)} / ${inr(s.totalFee)}`} />
       </div>
+
+      <SectionCard
+        title="My details"
+        subtitle="Your personal record — the college office sees exactly this in the admin portal"
+        actions={
+          <button className="btn btn-ghost btn-sm" onClick={() => setProfileOpen(true)}>
+            ✎ Edit details
+          </button>
+        }
+      >
+        <div className="grid-3">
+          <Detail label="Full name" value={s.name} />
+          <Detail label="Roll number" value={s.rollNumber} />
+          <Detail label="College" value={s.college} />
+          <Detail label="Branch" value={s.branch} />
+          <Detail label="Year / Section" value={s.year ? `${s.year}${s.section ? ` · Sec ${s.section}` : ''}` : ''} />
+          <Detail label="Quota" value={s.quota} />
+          <Detail label="Date of birth" value={s.dob} />
+          <Detail label="Gender" value={s.gender} />
+          <Detail label="Blood group" value={s.bloodGroup} />
+          <Detail label="Father's name" value={s.fatherName} />
+          <Detail label="Mother's name" value={s.motherName} />
+          <Detail label="Student phone" value={s.phone} />
+          <Detail label="Alternate phone" value={s.alternatePhone} />
+          <Detail label="Parent phone" value={s.parentPhone} />
+          <Detail label="Email" value={s.email} />
+          <Detail label="Staying" value={s.hostel ? 'Hosteller' : 'Day scholar'} />
+          <Detail label="Village / street" value={s.village} />
+          <Detail label="Mandal" value={s.mandal} />
+          <Detail label="District" value={s.district} />
+          <Detail label="State" value={s.state} />
+          <Detail label="PIN code" value={s.pincode} />
+          <Detail label="Full address" value={s.address} />
+          <Detail
+            label="Emergency contact"
+            value={[s.emergencyContactName, s.emergencyContactPhone].filter(Boolean).join(' · ')}
+          />
+        </div>
+
+        <div className="space-between" style={{ marginTop: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <span className="chip chip-indigo">
+            {profileFilled} of {profileKeys.length} details filled
+          </span>
+          <button className="btn btn-ghost btn-sm" onClick={() => setProfileOpen(true)}>
+            {missingProfile.length ? 'Complete your profile' : '✎ Edit details'}
+          </button>
+        </div>
+        {missingProfile.length > 0 && (
+          <p className="muted small" style={{ marginTop: '0.5rem' }}>
+            Still missing{' '}
+            <strong>
+              {missingProfile
+                .slice(0, 3)
+                .map((k) => PROFILE_LABELS[k])
+                .join(', ')}
+              {missingProfile.length > 3 ? ` and ${missingProfile.length - 3} more` : ''}
+            </strong>
+            . Filling them in helps the office contact you.
+          </p>
+        )}
+      </SectionCard>
 
       <SectionCard title="Fee break-up" subtitle="Your fee is split into tuition, hostel and monthly mess">
         <div className="grid-3">
@@ -523,6 +621,13 @@ export default function StudentDashboard() {
           </div>
         )}
       </SectionCard>
+
+      <StudentProfileModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        student={s}
+        onSaved={(student) => setReport((r) => (r ? { ...r, student } : r))}
+      />
     </>
   );
 }

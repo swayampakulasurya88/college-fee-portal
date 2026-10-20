@@ -11,8 +11,22 @@ const EMPTY = {
   section: '',
   email: '',
   phone: '',
+  alternatePhone: '',
   parentPhone: '',
   address: '',
+  village: '',
+  mandal: '',
+  district: '',
+  state: '',
+  pincode: '',
+  fatherName: '',
+  motherName: '',
+  dob: '',
+  gender: '',
+  bloodGroup: '',
+  hostel: false,
+  emergencyContactName: '',
+  emergencyContactPhone: '',
   loan: false,
   loanNote: '',
   quota: 'ACAT',
@@ -36,8 +50,22 @@ export default function StudentFormModal({ open, onClose, onSaved, student = nul
             section: student.section || '',
             email: student.email || '',
             phone: student.phone || '',
+            alternatePhone: student.alternatePhone || '',
             parentPhone: student.parentPhone || '',
             address: student.address || '',
+            village: student.village || '',
+            mandal: student.mandal || '',
+            district: student.district || '',
+            state: student.state || '',
+            pincode: student.pincode || '',
+            fatherName: student.fatherName || '',
+            motherName: student.motherName || '',
+            dob: student.dob || '',
+            gender: student.gender || '',
+            bloodGroup: student.bloodGroup || '',
+            hostel: student.hostel === true,
+            emergencyContactName: student.emergencyContactName || '',
+            emergencyContactPhone: student.emergencyContactPhone || '',
             loan: student.loan === true,
             loanNote: student.loanNote || '',
             quota: student.quota || 'ACAT',
@@ -124,6 +152,9 @@ export default function StudentFormModal({ open, onClose, onSaved, student = nul
           <Field label="Parent Phone">
             <Input value={form.parentPhone} onChange={set('parentPhone')} placeholder="98xxxxxxx" />
           </Field>
+          <Field label="Alternate Phone">
+            <Input value={form.alternatePhone} onChange={set('alternatePhone')} placeholder="Second number" />
+          </Field>
         </div>
         <Field label="Address">
           <Input
@@ -132,6 +163,90 @@ export default function StudentFormModal({ open, onClose, onSaved, student = nul
             placeholder="House / street, village or town, district, state — PIN"
           />
         </Field>
+        <div className="grid-3">
+          <Field label="Village / street">
+            <Input value={form.village} onChange={set('village')} />
+          </Field>
+          <Field label="Mandal">
+            <Input value={form.mandal} onChange={set('mandal')} />
+          </Field>
+          <Field label="District">
+            <Input value={form.district} onChange={set('district')} />
+          </Field>
+        </div>
+        <div className="grid-3">
+          <Field label="State">
+            <Input value={form.state} onChange={set('state')} placeholder="Andhra Pradesh" />
+          </Field>
+          <Field label="PIN code">
+            <Input value={form.pincode} onChange={set('pincode')} inputMode="numeric" placeholder="6 digits" />
+          </Field>
+          <div />
+        </div>
+
+        <h4 style={{ margin: '0.6rem 0 0.4rem' }}>Personal details</h4>
+        <p className="muted small" style={{ marginTop: '-0.3rem', marginBottom: '0.5rem' }}>
+          Students can also fill these in from their own login — updates appear here.
+        </p>
+        <div className="grid-2">
+          <Field label="Father's name">
+            <Input value={form.fatherName} onChange={set('fatherName')} placeholder="Father / guardian name" />
+          </Field>
+          <Field label="Mother's name">
+            <Input value={form.motherName} onChange={set('motherName')} placeholder="Mother name" />
+          </Field>
+        </div>
+        <div className="grid-2">
+          <Field label="Date of birth">
+            <Input type="date" value={form.dob} onChange={set('dob')} />
+          </Field>
+          <Field label="Gender">
+            <Select value={form.gender} onChange={set('gender')}>
+              <option value="">Select…</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </Select>
+          </Field>
+        </div>
+        <div className="grid-2">
+          <Field label="Blood group">
+            <Select value={form.bloodGroup} onChange={set('bloodGroup')}>
+              <option value="">Select…</option>
+              {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
+                <option key={bg} value={bg}>
+                  {bg}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Staying">
+            <Select
+              value={form.hostel ? 'hostel' : 'day'}
+              onChange={(e) => setForm((f) => ({ ...f, hostel: e.target.value === 'hostel' }))}
+            >
+              <option value="day">Day scholar</option>
+              <option value="hostel">Hosteller</option>
+            </Select>
+          </Field>
+        </div>
+        <div className="grid-2">
+          <Field label="Emergency contact name">
+            <Input
+              value={form.emergencyContactName}
+              onChange={set('emergencyContactName')}
+              placeholder="Person to call in an emergency"
+            />
+          </Field>
+          <Field label="Emergency contact phone">
+            <Input
+              value={form.emergencyContactPhone}
+              onChange={set('emergencyContactPhone')}
+              inputMode="tel"
+              placeholder="98xxxxxxx"
+            />
+          </Field>
+        </div>
         <div className="grid-2">
           <Field label="Quota" required hint="Sets the term-wise tuition rate (ACAT ₹18,750 · BCAT/Spot ₹31,250 per term).">
             <Select value={form.quota} onChange={set('quota')}>
