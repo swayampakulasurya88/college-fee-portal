@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { Field, Input, Modal, Select, TextArea, useToast } from './ui.jsx';
+import { CustomFieldInput } from '../pages/student/studentShared.jsx';
 
 // Fields a student may edit on their own record. Academic fields (name, branch,
 // year, quota) and all fee fields stay admin-only.
@@ -25,9 +26,10 @@ const EMPTY = {
   emergencyContactPhone: '',
 };
 
-export default function StudentProfileModal({ open, onClose, student, onSaved }) {
+export default function StudentProfileModal({ open, onClose, student, customFields = [], onSaved }) {
   const toast = useToast();
   const [form, setForm] = useState(EMPTY);
+  const [custom, setCustom] = useState({});
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -52,15 +54,17 @@ export default function StudentProfileModal({ open, onClose, student, onSaved })
       emergencyContactName: student.emergencyContactName || '',
       emergencyContactPhone: student.emergencyContactPhone || '',
     });
+    setCustom({ ...(student.customFields || {}) });
   }, [open, student]);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const setCustomValue = (key, value) => setCustom((c) => ({ ...c, [key]: value }));
 
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const res = await api('/students/me', { method: 'PATCH', body: form });
+      const res = await api('/students/me', { method: 'PATCH', body: { ...form, customFields: custom } });
       toast.success('Your details were saved.');
       onSaved?.(res.student);
       onClose();
@@ -204,6 +208,26 @@ export default function StudentProfileModal({ open, onClose, student, onSaved })
             />
           </Field>
         </div>
+
+        {customFields.length > 0 && (
+          <>
+            <h4 style={{ marginTop: '0.25rem' }}>Extra details</h4>
+            <p className="muted small" style={{ marginTop: -4 }}>
+              Added by the college office — please fill these in if they are blank.
+            </p>
+            <div className="grid-2">
+              {customFields.map((f) => (
+                <Field key={f.key} label={f.label} required={f.required}>
+                  <CustomFieldInput
+                    field={f}
+                    value={custom[f.key]}
+                    onChange={(value) => setCustomValue(f.key, value)}
+                  />
+                </Field>
+              ))}
+            </div>
+          </>
+        )}
 
         <p className="muted small">
           Your name, roll number, branch, year, section and quota are set by the college and can only be changed

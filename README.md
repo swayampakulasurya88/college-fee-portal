@@ -46,6 +46,10 @@ a transaction ID and term) and message the admin.
 - **Backups page:** a gzip-compressed JSON snapshot of the whole database **per day**,
   taken automatically (hourly while awake, plus on admin login) and downloadable from the
   admin portal, with record counts per collection.
+- **Extra fields:** define your own student details (e.g. **Number of backlogs**, hostel
+  room, Aadhaar last 4) as text, number, dropdown or date. Each field instantly appears on
+  **every student's page** (admin and student login), in the student details modal and in
+  Excel/PDF exports — and students can fill their own values in.
 
 ### Student
 - Log in with **roll number only** (no password).
@@ -53,6 +57,10 @@ a transaction ID and term) and message the admin.
   names, alternate/parent phone, village / mandal / district / state / PIN, hostel or day
   scholar, and an emergency contact. It appears in the admin portal (student list, search,
   details modal, Excel/PDF export) and students can edit it any time.
+- **Profile photo:** upload a picture from your own login — it shows on your dashboard and
+  in the admin portal.
+- **Four separate pages:** Dashboard, My Details, Fee Details and Fee Payments.
+- Fill in any **extra details** the college office has added (e.g. number of backlogs).
 - See the **grand total**, **total paid**, **total due** and a per-head break-up for
   **tuition, hostel and mess**, plus a **term-by-term break-up** (fee / paid / due per
   term) and the monthly mess bills.
@@ -222,7 +230,9 @@ A student is **Paid** when due ≤ 0, **Unpaid** with no payments, otherwise **P
 | `PATCH /students/:id` | admin | Update details / quota |
 | `DELETE /students/:id` | admin | Archive student + term fees + payments + mess bills + messages to the Deleted page (restorable) |
 | `GET /students/me` | student | Own profile + finance |
-| `PATCH /students/me` | student | Edit own personal details (DOB, parents, address, blood group, …) |
+| `PATCH /students/me` | student | Edit own personal details (DOB, parents, address, blood group, …) and fill in admin-defined extra fields |
+| `POST /students/me/photo` | student | Upload/replace own profile photo (small data URL) |
+| `DELETE /students/me/photo` | student | Remove own profile photo |
 | `GET /students/me/payments` | student | Own payments |
 | `GET /payments` | admin | List payments (search, fee head + date range) |
 | `GET /payments/mine` | student | Own payments |
@@ -258,6 +268,10 @@ A student is **Paid** when due ≤ 0, **Unpaid** with no payments, otherwise **P
 | `GET /backups` | admin | List daily database snapshots (metadata) |
 | `POST /backups/run` | admin | Take today's snapshot now (`force: true` to redo) |
 | `GET /backups/:date` | admin | Download `kiet-fee-backup-YYYY-MM-DD.json.gz` |
+| `GET /custom-fields` | any | Admin-defined extra student details (`?all=true` for admin) |
+| `POST /custom-fields` | admin | Add an extra field (e.g. “Number of backlogs”) |
+| `PATCH /custom-fields/:id` | admin | Rename / retype / show-hide an extra field |
+| `DELETE /custom-fields/:id` | admin | Remove a field and its values from every student |
 
 ---
 

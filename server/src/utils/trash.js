@@ -6,11 +6,11 @@ import { Payment } from '../models/Payment.js';
 import { MessBill } from '../models/MessBill.js';
 import { TermFee } from '../models/TermFee.js';
 import { Message } from '../models/Message.js';
+import { CustomField } from '../models/CustomField.js';
 import { HttpError } from './asyncHandler.js';
 import { syncStudentFees } from './finance.js';
 
-const MODELS = [Student, Payment, MessBill, TermFee, Message];
-
+const MODELS = [Student, Payment, MessBill, TermFee, Message, CustomField];
 export const BY_COLLECTION = Object.fromEntries(MODELS.map((m) => [m.collection.name, m]));
 
 export const ENTITY_BY_COLLECTION = {
@@ -27,6 +27,7 @@ export const ENTITY_LABEL = {
   messBill: 'Mess bill',
   termFee: 'Term fee',
   message: 'Message',
+  customField: 'Extra detail',
 };
 
 // Restoring a student must happen before their dependent records.

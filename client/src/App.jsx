@@ -21,6 +21,7 @@ import AdminDuplicates from './pages/admin/AdminDuplicates.jsx';
 import AdminCalendar from './pages/admin/AdminCalendar.jsx';
 import AdminTrash from './pages/admin/AdminTrash.jsx';
 import AdminBackups from './pages/admin/AdminBackups.jsx';
+import AdminExtraFields from './pages/admin/AdminExtraFields.jsx';
 
 function RequireRole({ role }) {
   const { ready, role: current } = useAuth();
@@ -86,6 +87,7 @@ function AdminLayout() {
     { to: '/admin/duplicates', icon: '⚠️', label: 'Duplicates', badge: duplicates },
     { to: '/admin/deleted', icon: '🗑️', label: 'Deleted', badge: deleted },
     { to: '/admin/backups', icon: '💾', label: 'Backups' },
+    { to: '/admin/extra-fields', icon: '🧩', label: 'Extra Fields' },
   ];
 
   return (
@@ -126,6 +128,7 @@ export default function App() {
           <Route path="/admin/duplicates" element={<AdminDuplicates />} />
           <Route path="/admin/deleted" element={<AdminTrash />} />
           <Route path="/admin/backups" element={<AdminBackups />} />
+          <Route path="/admin/extra-fields" element={<AdminExtraFields />} />
         </Route>
       </Route>
 

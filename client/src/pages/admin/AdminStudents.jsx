@@ -14,6 +14,7 @@ import StudentFormModal from '../../components/StudentFormModal.jsx';
 import BulkImportModal from '../../components/BulkImportModal.jsx';
 import ManageFeesModal from '../../components/ManageFeesModal.jsx';
 import StudentAvatar from '../../components/StudentAvatar.jsx';
+import { useCustomFields } from '../student/studentShared.jsx';
 import { exportToExcel, exportToPdf } from '../../export.js';
 
 const LIMIT = 20;
@@ -58,6 +59,14 @@ const EXPORT_COLUMNS = [
   { header: 'Loan', get: (s) => (s.loan ? 'Yes' : '') },
 ];
 
+// Appends a column for every active admin-defined extra field (backlogs, etc.).
+const exportColumnsWith = (customFields = []) => [
+  ...EXPORT_COLUMNS,
+  ...customFields
+    .filter((f) => f.showInExport)
+    .map((f) => ({ header: f.label, get: (s) => (s.customFields ? s.customFields[f.key] || '' : '') })),
+];
+
 export default function AdminStudents() {
   const toast = useToast();
   const [rows, setRows] = useState([]);
@@ -78,6 +87,7 @@ export default function AdminStudents() {
   const [loanStudent, setLoanStudent] = useState(null);
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState('');
+  const customFields = useCustomFields();
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -163,7 +173,7 @@ export default function AdminStudents() {
         loanFilter && (loanFilter === 'true' ? 'loan students' : 'non-loan students'),
       ].filter(Boolean).join(', ');
       const opts = {
-        columns: EXPORT_COLUMNS,
+        columns: exportColumnsWith(customFields),
         rows,
         filename: `Students_${new Date().toISOString().slice(0, 10)}.${kind === 'excel' ? 'xlsx' : 'pdf'}`,
         title: 'Student Fee Report',
@@ -363,12 +373,18 @@ export default function AdminStudents() {
         )}
       </div>
 
-      <StudentFormModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={load} />
+      <StudentFormModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSaved={load}
+        customFields={customFields}
+      />
       <StudentFormModal
         open={Boolean(editStudent)}
         student={editStudent}
         onClose={() => setEditStudent(null)}
         onSaved={load}
+        customFields={customFields}
       />
       <BulkImportModal open={bulkOpen} onClose={() => setBulkOpen(false)} onSaved={load} />
       <ManageFeesModal

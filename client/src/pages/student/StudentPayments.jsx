@@ -10,7 +10,7 @@ import {
 } from '../../format.js';
 import { EmptyState, Field, Input, SectionCard, Select, Spinner, StatCard, useToast } from '../../components/ui.jsx';
 import { api } from '../../api.js';
-import { StudentHeader, useStudentReport } from './studentShared.jsx';
+import { StudentHeader, ExtraDetailsCard, useCustomFields, useStudentReport } from './studentShared.jsx';
 
 const METHODS = [
   ['upi', 'UPI'],
@@ -34,6 +34,7 @@ const emptyPay = () => ({
 
 export default function StudentPayments() {
   const { report, loading, load } = useStudentReport();
+  const customFields = useCustomFields();
   const toast = useToast();
   const [pay, setPay] = useState(emptyPay);
   const [paying, setPaying] = useState(false);
@@ -266,6 +267,12 @@ export default function StudentPayments() {
           </div>
         )}
       </SectionCard>
+
+      {customFields.length > 0 && (
+        <div style={{ marginTop: '1.25rem' }}>
+          <ExtraDetailsCard student={s} fields={customFields} />
+        </div>
+      )}
     </>
   );
 }

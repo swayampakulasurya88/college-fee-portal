@@ -35,6 +35,7 @@ export function studentPayload(student, finance = {}) {
     emergencyContactName: raw.emergencyContactName || '',
     emergencyContactPhone: raw.emergencyContactPhone || '',
     photo: raw.photo || '',
+    customFields: raw.customFields || {},
     loan: raw.loan === true,
     loanNote: raw.loanNote || '',
     quota: (raw.quota || 'ACAT').toUpperCase(),

@@ -45,6 +45,9 @@ const studentSchema = new mongoose.Schema(
     // Profile picture as a small (256px) JPEG/PNG/WebP data URL chosen by the
     // student from their own login; admins can change or clear it too.
     photo: { type: String, trim: true, default: '' },
+    // Admin-managed extra details (e.g. number of backlogs) — key = field key,
+    // value = string/number as entered. Shown on every student page.
+    customFields: { type: mongoose.Schema.Types.Mixed, default: {} },
     // Optional note about the loan (bank, sanction number, etc.).
     loanNote: { type: String, trim: true, default: '' },
     // Admission quota — drives the per-term tuition rate.

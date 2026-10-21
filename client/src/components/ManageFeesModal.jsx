@@ -25,6 +25,7 @@ import {
 import PaymentFormModal from './PaymentFormModal.jsx';
 import StudentFormModal from './StudentFormModal.jsx';
 import StudentAvatar, { readPhotoFile } from './StudentAvatar.jsx';
+import { useCustomFields } from '../pages/student/studentShared.jsx';
 
 function Cell({ label, value }) {
   return (
@@ -39,7 +40,7 @@ function Cell({ label, value }) {
 
 // Every detail the student has filled in, plus their photo (admins can set or
 // clear the photo too — handy for bulk enrolment sessions).
-function StudentIdentity({ student, onPhoto, busy }) {
+function StudentIdentity({ student, onPhoto, busy, customFields = [] }) {
   const fileRef = useRef(null);
 
   return (
@@ -111,6 +112,9 @@ function StudentIdentity({ student, onPhoto, busy }) {
         <Cell label="College / Branch" value={[student.college, student.branch].filter(Boolean).join(' · ')} />
         <Cell label="Year / Section" value={[student.year && `Year ${student.year}`, student.section && `Sec ${student.section}`].filter(Boolean).join(' · ')} />
         <Cell label="Loan" value={student.loan ? `Yes${student.loanNote ? ` · ${student.loanNote}` : ''}` : 'No'} />
+        {customFields.map((f) => (
+          <Cell key={f.key} label={f.label} value={student.customFields ? student.customFields[f.key] : ''} />
+        ))}
       </div>
     </>
   );
@@ -118,6 +122,7 @@ function StudentIdentity({ student, onPhoto, busy }) {
 
 export default function ManageFeesModal({ open, onClose, studentId, onChanged }) {
   const toast = useToast();
+  const customFields = useCustomFields();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [payModal, setPayModal] = useState({ open: false, payment: null });
@@ -356,7 +361,7 @@ export default function ManageFeesModal({ open, onClose, studentId, onChanged })
               </div>
             )}
 
-            <StudentIdentity student={s} busy={photoBusy} onPhoto={savePhoto} />
+            <StudentIdentity student={s} busy={photoBusy} onPhoto={savePhoto} customFields={customFields} />
 
             <div className="grid-3" style={{ marginBottom: '0.5rem' }}>
               <div>

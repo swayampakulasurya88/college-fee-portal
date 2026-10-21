@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api.js';
 import { quotaShort, quotaTone } from '../../format.js';
-import { useToast } from '../../components/ui.jsx';
+import { Input, SectionCard, Select, useToast } from '../../components/ui.jsx';
 import StudentAvatar from '../../components/StudentAvatar.jsx';
 
 /** Loads the student's own fee report (profile + finance + payments + mess). */
@@ -107,3 +107,90 @@ export function profileCompleteness(student) {
   const missing = keys.filter((k) => !student?.[k]);
   return { total: keys.length, filled: keys.length - missing.length, missing };
 }
+
+/**
+ * Loads the admin-defined extra details (backlogs, hostel room, …). Cached so
+ * every student page can render them without a round trip each time.
+ */
+let customFieldsCache = null;
+let customFieldsPromise = null;
+
+export function useCustomFields({ refresh = false } = {}) {
+  const [fields, setFields] = useState(customFieldsCache || []);
+
+  useEffect(() => {
+    if (customFieldsCache && !refresh) return;
+    if (!customFieldsPromise || refresh) {
+      customFieldsPromise = api('/custom-fields')
+        .then((res) => {
+          customFieldsCache = res.data || [];
+          return customFieldsCache;
+        })
+        .catch(() => []);
+    }
+    let active = true;
+    customFieldsPromise.then((list) => active && setFields(list));
+    return () => {
+      active = false;
+    };
+  }, [refresh]);
+
+  return fields;
+}
+
+/** Invalidates the cached field list (called after an admin edits them). */
+export function clearCustomFieldsCache() {
+  customFieldsCache = null;
+  customFieldsPromise = null;
+}
+
+/** An input matching an admin-defined field's type. */
+export function CustomFieldInput({ field, value, onChange, disabled = false }) {
+  const common = {
+    value: value ?? '',
+    onChange: (e) => onChange(e.target.value),
+    disabled,
+  };
+  if (field.inputType === 'select') {
+    return (
+      <Select {...common}>
+        <option value="">Select…</option>
+        {(field.options || []).map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </Select>
+    );
+  }
+  return (
+    <Input
+      {...common}
+      type={field.inputType === 'number' ? 'number' : field.inputType === 'date' ? 'date' : 'text'}
+    />
+  );
+}
+
+/** "Extra details" block shown on every student page. */
+export function ExtraDetailsCard({ student, fields, onEdit, actions }) {
+  const values = student?.customFields || {};
+  return (
+    <SectionCard
+      title="Extra details"
+      subtitle="Added by the college office — these apply to every student"
+      actions={actions ?? (onEdit ? <button className="btn btn-ghost btn-sm" onClick={onEdit}>✎ Edit details</button> : null)}
+    >
+      {fields.length === 0 ? (
+        <p className="muted small">No extra details have been added yet.</p>
+      ) : (
+        <div className="grid-3">
+          {fields.map((f) => (
+            <Detail key={f.key} label={f.label} value={values[f.key]} />
+          ))}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+

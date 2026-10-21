@@ -3,10 +3,19 @@ import { api } from '../../api.js';
 import { EmptyState, ProgressBar, SectionCard, Spinner, useToast } from '../../components/ui.jsx';
 import StudentAvatar, { readPhotoFile } from '../../components/StudentAvatar.jsx';
 import StudentProfileModal from '../../components/StudentProfileModal.jsx';
-import { Detail, PROFILE_LABELS, StudentHeader, profileCompleteness, useStudentReport } from './studentShared.jsx';
+import {
+  Detail,
+  PROFILE_LABELS,
+  StudentHeader,
+  ExtraDetailsCard,
+  profileCompleteness,
+  useCustomFields,
+  useStudentReport,
+} from './studentShared.jsx';
 
 export default function StudentDetails() {
   const { report, setReport, loading, load } = useStudentReport();
+  const customFields = useCustomFields();
   const toast = useToast();
   const [editOpen, setEditOpen] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -162,8 +171,13 @@ export default function StudentDetails() {
         open={editOpen}
         onClose={() => setEditOpen(false)}
         student={s}
+        customFields={customFields}
         onSaved={(student) => setReport((r) => (r ? { ...r, student } : r))}
       />
+
+      <div style={{ marginTop: '1.25rem' }}>
+        <ExtraDetailsCard student={s} fields={customFields} onEdit={() => setEditOpen(true)} />
+      </div>
     </>
   );
 }

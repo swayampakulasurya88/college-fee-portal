@@ -13,6 +13,7 @@ import { TermFee } from '../models/TermFee.js';
 import { Message } from '../models/Message.js';
 import { DuplicateAttempt } from '../models/DuplicateAttempt.js';
 import { Trash } from '../models/Trash.js';
+import { CustomField } from '../models/CustomField.js';
 
 const COLLECTIONS = [
   ['students', Student],
@@ -21,6 +22,7 @@ const COLLECTIONS = [
   ['messBills', MessBill],
   ['messages', Message],
   ['duplicateAttempts', DuplicateAttempt],
+  ['customFields', CustomField],
   ['trash', Trash],
 ];
 

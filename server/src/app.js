@@ -15,6 +15,7 @@ import reportRoutes from './routes/reports.js';
 import duplicateRoutes from './routes/duplicates.js';
 import trashRoutes from './routes/trash.js';
 import backupRoutes from './routes/backups.js';
+import customFieldRoutes from './routes/customFields.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -40,6 +41,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/duplicates', duplicateRoutes);
 app.use('/api/trash', trashRoutes);
 app.use('/api/backups', backupRoutes);
+app.use('/api/custom-fields', customFieldRoutes);
 
 // When deployed as a single service (e.g. Render), the same server also hosts
 // the built React site, so the SPA and its assets are served from client/dist.

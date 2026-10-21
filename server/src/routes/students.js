@@ -4,6 +4,7 @@ import { Payment } from '../models/Payment.js';
 import { Message } from '../models/Message.js';
 import { MessBill } from '../models/MessBill.js';
 import { TermFee } from '../models/TermFee.js';
+import { CustomField } from '../models/CustomField.js';
 import { buildFinance, financeForStudent, round2, feeStatus, QUOTAS } from '../utils/finance.js';
 import { studentPayload, paymentPayload, messBillPayload, termFeePayload } from '../utils/serialize.js';
 import { asyncHandler, HttpError } from '../utils/asyncHandler.js';
@@ -31,6 +32,33 @@ function normalizePhoto(value) {
   }
   if (!PHOTO_RE.test(photo)) throw new HttpError(400, 'Photo must be a JPEG, PNG or WebP image');
   return photo;
+}
+
+// Admin-defined extra details (backlogs, room number, …) arrive as a flat object
+// of key → value. Values are trimmed to strings; unknown keys are accepted so a
+// field can be filled before/after its definition exists.
+function normalizeCustomFields(input) {
+  let parsed = input;
+  if (typeof parsed === 'string') {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      throw new HttpError(400, 'Extra details must be a JSON object');
+    }
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new HttpError(400, 'Extra details must be a JSON object');
+  }
+  const clean = {};
+  for (const [key, value] of Object.entries(parsed)) {
+    const name = String(key).trim().slice(0, 40);
+    if (!name || /^\$|\./.test(name)) continue;
+    if (value === null || value === undefined) continue;
+    const text = typeof value === 'number' ? String(value) : String(value).trim();
+    if (text.length > 300) throw new HttpError(400, `"${name}" is too long`);
+    if (text) clean[name] = text;
+  }
+  return clean;
 }
 
 function normalize(doc) {
@@ -71,6 +99,7 @@ function normalize(doc) {
     emergencyContactName: doc.emergencyContactName || '',
     emergencyContactPhone: doc.emergencyContactPhone || '',
     photo: doc.photo || '',
+    customFields: doc.customFields || {},
     loan,
     loanNote: doc.loanNote || '',
     quota: (doc.quota || 'ACAT').toUpperCase(),
@@ -156,6 +185,8 @@ function pickStudentFields(body, { requireCore = false } = {}) {
   setIf('emergencyContactPhone', (v) => String(v).trim());
   setIf('loanNote', (v) => String(v).trim());
   setIf('photo', normalizePhoto);
+  // Admin-managed extra details (backlogs, etc.) arrive as a flat object.
+  if (body.customFields !== undefined) out.customFields = normalizeCustomFields(body.customFields);
   setIf('loan', (v) => v === true || v === 'true' || v === 1 || v === '1');
   setIf('quota', (v) => String(v).trim().toUpperCase());
   setIf('active', (v) => Boolean(v));
@@ -233,6 +264,8 @@ function pickProfileFields(body) {
   if (body.hostel !== undefined) {
     out.hostel = body.hostel === true || body.hostel === 'true' || body.hostel === 1 || body.hostel === '1';
   }
+  // Students may fill in the extra details the college office has added.
+  if (body.customFields !== undefined) out.customFields = normalizeCustomFields(body.customFields);
   return out;
 }
 
@@ -257,6 +290,10 @@ router.patch(
     if (!student) throw new HttpError(404, 'Student not found');
 
     const fields = pickProfileFields(req.body || {});
+    // Extra details merge so a partial update never clears the other fields.
+    if (fields.customFields) {
+      fields.customFields = { ...(student.customFields || {}), ...fields.customFields };
+    }
     Object.assign(student, fields);
     await student.save();
 
@@ -323,6 +360,8 @@ router.get(
     const match = {};
     if (q) {
       const rx = new RegExp(escapeRegex(q), 'i');
+      // Also search the values of admin-defined extra details (backlogs, …).
+      const customKeys = await CustomField.find({ active: true }).select('key').lean();
       match.$or = [
         { rollNumber: rx },
         { name: rx },
@@ -335,6 +374,7 @@ router.get(
         { pincode: rx },
         { village: rx },
         { district: rx },
+        ...customKeys.map((f) => ({ [`customFields.${f.key}`]: rx })),
       ];
     }
     if (QUOTAS.includes(quota)) match.quota = quota;
@@ -497,6 +537,10 @@ router.patch(
     if (fields.rollNumber && fields.rollNumber !== student.rollNumber) {
       const clash = await Student.findOne({ rollNumber: fields.rollNumber, _id: { $ne: student._id } });
       if (clash) throw new HttpError(409, `Roll number ${fields.rollNumber} already exists`);
+    }
+    // Merge extra details so editing one field never clears the others.
+    if (fields.customFields) {
+      fields.customFields = { ...(student.customFields || {}), ...fields.customFields };
     }
 
     Object.assign(student, fields);

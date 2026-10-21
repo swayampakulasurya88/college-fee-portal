@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { Field, Input, Modal, Select, useToast } from './ui.jsx';
+import { CustomFieldInput } from '../pages/student/studentShared.jsx';
 
 const EMPTY = {
   rollNumber: '',
@@ -32,13 +33,15 @@ const EMPTY = {
   quota: 'ACAT',
 };
 
-export default function StudentFormModal({ open, onClose, onSaved, student = null }) {
+export default function StudentFormModal({ open, onClose, onSaved, student = null, customFields = [] }) {
   const toast = useToast();
   const [form, setForm] = useState(EMPTY);
+  const [custom, setCustom] = useState({});
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    setCustom({ ...(student?.customFields || {}) });
     setForm(
       student
         ? {
@@ -82,6 +85,7 @@ export default function StudentFormModal({ open, onClose, onSaved, student = nul
     try {
       const payload = {
         ...form,
+        customFields: custom,
         rollNumber: form.rollNumber.trim().toUpperCase(),
       };
       const res = student
@@ -277,6 +281,26 @@ export default function StudentFormModal({ open, onClose, onSaved, student = nul
           Fixed tuition & hostel fees are assigned term-wise from the “Fee Structure” page. The monthly mess
           fee is added from the “Mess Fees” page. Total fee = tuition + hostel + mess.
         </p>
+
+        {customFields.length > 0 && (
+          <>
+            <h4 style={{ margin: '0.6rem 0 0.4rem' }}>Extra details</h4>
+            <p className="muted small" style={{ marginTop: '-0.3rem', marginBottom: '0.5rem' }}>
+              Fields you added on the “Extra fields” page. Students can also fill these in from their own login.
+            </p>
+            <div className="grid-2">
+              {customFields.map((f) => (
+                <Field key={f.key} label={f.label} required={f.required}>
+                  <CustomFieldInput
+                    field={f}
+                    value={custom[f.key]}
+                    onChange={(value) => setCustom((c) => ({ ...c, [f.key]: value }))}
+                  />
+                </Field>
+              ))}
+            </div>
+          </>
+        )}
         <button type="submit" hidden />
       </form>
     </Modal>

@@ -1,9 +1,10 @@
 import { categoryLabel, categoryShort, categoryTone, inr, monthLabel, paidPercent } from '../../format.js';
 import { Badge, EmptyState, ProgressBar, SectionCard, Spinner, StatCard } from '../../components/ui.jsx';
-import { Detail, StudentHeader, useStudentReport } from './studentShared.jsx';
+import { Detail, StudentHeader, ExtraDetailsCard, useCustomFields, useStudentReport } from './studentShared.jsx';
 
 export default function StudentFees() {
   const { report, loading, load } = useStudentReport();
+  const customFields = useCustomFields();
 
   if (loading) return <Spinner label="Loading your fee details…" />;
   if (!report) return <EmptyState title="Could not load your fee details" hint="Please refresh the page." />;
@@ -174,6 +175,12 @@ export default function StudentFees() {
           every month. Pay from the <strong>Fee payments</strong> page and your due updates instantly.
         </p>
       </SectionCard>
+
+      {customFields.length > 0 && (
+        <div style={{ marginTop: '1.25rem' }}>
+          <ExtraDetailsCard student={s} fields={customFields} />
+        </div>
+      )}
     </>
   );
 }
