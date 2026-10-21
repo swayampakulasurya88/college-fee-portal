@@ -35,7 +35,7 @@ export function useStudentReport() {
 }
 
 /** Page header with the student's photo, greeting and quota/loan chips. */
-export function StudentHeader({ student, title, subtitle, onRefresh, refreshing = false }) {
+export function StudentHeader({ student, title, subtitle, onRefresh, refreshing = false, actions }) {
   return (
     <div className="page-head">
       <div className="inline" style={{ gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -58,11 +58,14 @@ export function StudentHeader({ student, title, subtitle, onRefresh, refreshing 
           </div>
         </div>
       </div>
-      {onRefresh && (
+      {(onRefresh || actions) && (
         <div className="page-actions">
-          <button className="btn btn-ghost" onClick={() => onRefresh()} disabled={refreshing}>
-            ↻ Refresh
-          </button>
+          {actions}
+          {onRefresh && (
+            <button className="btn btn-ghost" onClick={() => onRefresh()} disabled={refreshing}>
+              ↻ Refresh
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@ import { api } from '../../api.js';
 import { EmptyState, ProgressBar, SectionCard, Spinner, useToast } from '../../components/ui.jsx';
 import StudentAvatar, { readPhotoFile } from '../../components/StudentAvatar.jsx';
 import StudentProfileModal from '../../components/StudentProfileModal.jsx';
+import { exportToExcel, exportToPdf } from '../../export.js';
 import {
   Detail,
   PROFILE_LABELS,
@@ -13,12 +14,51 @@ import {
   useStudentReport,
 } from './studentShared.jsx';
 
+// The student's own record, exactly as shown on this page — used for the
+// Excel / PDF downloads so they always match what is on screen.
+function recordColumns(student, customFields = []) {
+  return [
+    { header: 'Full name', get: () => student.name || '' },
+    { header: 'Roll number', get: () => student.rollNumber || '' },
+    { header: 'College', get: () => student.college || '' },
+    { header: 'Branch', get: () => student.branch || '' },
+    { header: 'Year', get: () => student.year || '' },
+    { header: 'Section', get: () => student.section || '' },
+    { header: 'Quota', get: () => student.quota || '' },
+    { header: 'Date of birth', get: () => student.dob || '' },
+    { header: 'Gender', get: () => student.gender || '' },
+    { header: 'Blood group', get: () => student.bloodGroup || '' },
+    { header: "Father's name", get: () => student.fatherName || '' },
+    { header: "Mother's name", get: () => student.motherName || '' },
+    { header: 'Student phone', get: () => student.phone || '' },
+    { header: 'Alternate phone', get: () => student.alternatePhone || '' },
+    { header: 'Parent phone', get: () => student.parentPhone || '' },
+    { header: 'Email', get: () => student.email || '' },
+    { header: 'Staying', get: () => (student.hostel ? 'Hosteller' : 'Day scholar') },
+    { header: 'Village / street', get: () => student.village || '' },
+    { header: 'Mandal', get: () => student.mandal || '' },
+    { header: 'District', get: () => student.district || '' },
+    { header: 'State', get: () => student.state || '' },
+    { header: 'PIN code', get: () => student.pincode || '' },
+    { header: 'Full address', get: () => student.address || '' },
+    {
+      header: 'Emergency contact',
+      get: () => [student.emergencyContactName, student.emergencyContactPhone].filter(Boolean).join(' · '),
+    },
+    ...customFields.map((f) => ({
+      header: f.label,
+      get: () => (student.customFields ? student.customFields[f.key] || '' : ''),
+    })),
+  ];
+}
+
 export default function StudentDetails() {
   const { report, setReport, loading, load } = useStudentReport();
   const customFields = useCustomFields();
   const toast = useToast();
   const [editOpen, setEditOpen] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [exporting, setExporting] = useState('');
   const fileRef = useRef(null);
 
   if (loading) return <Spinner label="Loading your details…" />;
@@ -57,6 +97,29 @@ export default function StudentDetails() {
     }
   };
 
+  const exportRecord = async (kind) => {
+    setExporting(kind);
+    try {
+      const filename = `My_Details_${s.rollNumber || 'student'}_${new Date().toISOString().slice(0, 10)}.${
+        kind === 'excel' ? 'xlsx' : 'pdf'
+      }`;
+      const opts = {
+        columns: recordColumns(s, customFields),
+        rows: [s],
+        filename,
+        title: 'Student Details',
+        subtitle: `${s.name} · ${s.rollNumber}${s.college ? ` · ${s.college}` : ''}${s.branch ? ` · ${s.branch}` : ''}`,
+      };
+      if (kind === 'excel') await exportToExcel({ ...opts, sheetName: 'My Details', orientation: 'landscape' });
+      else await exportToPdf({ ...opts, orientation: 'landscape' });
+      toast.success(`${kind === 'excel' ? 'Excel' : 'PDF'} downloaded.`);
+    } catch (err) {
+      toast.error(`Export failed: ${err.message}`);
+    } finally {
+      setExporting('');
+    }
+  };
+
   return (
     <>
       <StudentHeader
@@ -64,6 +127,16 @@ export default function StudentDetails() {
         title="My details"
         subtitle="Everything here is visible to the college office in the admin portal"
         onRefresh={() => load(true)}
+        actions={
+          <>
+            <button className="btn btn-ghost" disabled={!!exporting} onClick={() => exportRecord('excel')}>
+              {exporting === 'excel' ? 'Exporting…' : '⬇ Excel'}
+            </button>
+            <button className="btn btn-ghost" disabled={!!exporting} onClick={() => exportRecord('pdf')}>
+              {exporting === 'pdf' ? 'Exporting…' : '⬇ PDF'}
+            </button>
+          </>
+        }
       />
 
       <div className="two-col">
@@ -132,9 +205,17 @@ export default function StudentDetails() {
         title="Personal record"
         subtitle="Academic details are maintained by the college; the rest is yours to update"
         actions={
-          <button className="btn btn-primary btn-sm" onClick={() => setEditOpen(true)}>
-            ✎ Edit details
-          </button>
+          <div className="row-actions">
+            <button className="btn btn-ghost btn-sm" disabled={!!exporting} onClick={() => exportRecord('excel')}>
+              {exporting === 'excel' ? 'Exporting…' : '⬇ Excel'}
+            </button>
+            <button className="btn btn-ghost btn-sm" disabled={!!exporting} onClick={() => exportRecord('pdf')}>
+              {exporting === 'pdf' ? 'Exporting…' : '⬇ PDF'}
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={() => setEditOpen(true)}>
+              ✎ Edit details
+            </button>
+          </div>
         }
       >
         <div className="grid-3">
