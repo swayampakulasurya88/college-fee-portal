@@ -124,7 +124,7 @@ export default function StudentDetails() {
     <>
       <StudentHeader
         student={s}
-        title="My details"
+        title="Student Details"
         subtitle="Everything here is visible to the college office in the admin portal"
         onRefresh={() => load(true)}
         actions={

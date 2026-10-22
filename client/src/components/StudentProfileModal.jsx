@@ -80,7 +80,7 @@ export default function StudentProfileModal({ open, onClose, student, customFiel
       open={open}
       onClose={onClose}
       size="lg"
-      title="My details"
+      title="Student details"
       subtitle="Fill in your personal information — the college office can see it from the admin portal."
       footer={
         <>

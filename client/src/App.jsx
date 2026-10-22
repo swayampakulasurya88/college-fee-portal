@@ -22,6 +22,7 @@ import AdminCalendar from './pages/admin/AdminCalendar.jsx';
 import AdminTrash from './pages/admin/AdminTrash.jsx';
 import AdminBackups from './pages/admin/AdminBackups.jsx';
 import AdminExtraFields from './pages/admin/AdminExtraFields.jsx';
+import AdminStudentDetails from './pages/admin/AdminStudentDetails.jsx';
 
 function RequireRole({ role }) {
   const { ready, role: current } = useAuth();
@@ -42,7 +43,7 @@ function StudentLayout() {
       roleLabel="Student Portal"
       nav={[
         { to: '/student', end: true, icon: '📊', label: 'Dashboard' },
-        { to: '/student/details', icon: '👤', label: 'My Details' },
+        { to: '/student/details', icon: '👤', label: 'Student Details' },
         { to: '/student/fees', icon: '🧾', label: 'Fee Details' },
         { to: '/student/payments', icon: '💰', label: 'Fee Payments' },
       ]}
@@ -77,6 +78,7 @@ function AdminLayout() {
   const nav = [
     { to: '/admin', end: true, icon: '🏠', label: 'Dashboard' },
     { to: '/admin/students', icon: '🎓', label: 'Students' },
+    { to: '/admin/student-details', icon: '🧑🎓', label: 'Student Details' },
     { to: '/admin/stpo', icon: '🧩', label: 'STPO' },
     { to: '/admin/fees', icon: '🧮', label: 'Fee Structure' },
     { to: '/admin/payments', icon: '💰', label: 'Fee Payments' },
@@ -118,6 +120,7 @@ export default function App() {
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminOverview />} />
           <Route path="/admin/students" element={<AdminStudents />} />
+          <Route path="/admin/student-details" element={<AdminStudentDetails />} />
           <Route path="/admin/stpo" element={<AdminStpo />} />
           <Route path="/admin/fees" element={<AdminFeeStructure />} />
           <Route path="/admin/payments" element={<AdminPayments />} />

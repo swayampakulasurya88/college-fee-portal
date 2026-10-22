@@ -130,7 +130,7 @@ export default function StudentDashboard() {
       <div className="grid-3" style={{ marginTop: '1.25rem' }}>
         <Link to="/student/details" className="card" style={{ textDecoration: 'none', color: 'inherit', padding: '1rem' }}>
           <div className="space-between">
-            <strong>👤 My details</strong>
+            <strong>👤 Student details</strong>
             <span className="muted small">View →</span>
           </div>
           <div className="muted small" style={{ marginTop: 6 }}>
